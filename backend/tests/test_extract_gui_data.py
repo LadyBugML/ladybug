@@ -1,7 +1,7 @@
 from services.extract_gui_data import extract_sc_terms
 
 def test_extract_SC_terms():
-    json_path = "backend/temp_testing/Execution-1.json" # Replace with the actual path to your test file
+    json_path = "temp_testing/Execution-1.json" # Replace with the actual path to your test file
 
     expected_sc_terms = [
         "action_bar_root",
