@@ -1,0 +1,1 @@
+from services.extract_gui_data import extract_SC_terms
