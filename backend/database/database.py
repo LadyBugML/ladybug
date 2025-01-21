@@ -21,7 +21,7 @@ class Database:
             cls._instance.__client = None
         return cls._instance
     
-    def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings'):
+    def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings', files_collection = 'files'):
         # Set up basic logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ class Database:
         self.__database = self.__client[database]
         self.__repos = self.__database[repo_collection]
         self.__embeddings = self.__database[embeddings_collection]
+        self.__files = self.__database[files_collection]
 
     def __initialize_database_client(self, password):
         if self.__client is not None:
@@ -70,6 +71,14 @@ class Database:
         :return: The embeddings collection.
         """
         return self.__embeddings
+    
+    def get_files_collection(self):
+        """
+        Gets the reference to the files collection on MongoDB.
+
+        :return: The embeddings collection.
+        """
+        return self.__files
     
     def get_repo_files_embeddings(self, repo_id):
         """

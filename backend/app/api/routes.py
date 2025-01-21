@@ -2,6 +2,7 @@ import logging
 import os
 import json
 import time
+import chardet
 
 import requests
 import shutil
@@ -394,6 +395,8 @@ def process_and_patch_embeddings(changed_files, repo_info):
     """
     repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
 
+    # Add updating to the files db here
+
     # Preprocess the changed source code files
     preprocessed_files = preprocess_source_code(repo_dir)
 
@@ -449,7 +452,7 @@ def update_embeddings_in_db(changed_files, clean_files, repo_info):
     logger.info("Database updated with added, modified, and removed files.")
 
 
-def process_and_store_embeddings(repo_info,comment_id):
+def process_and_store_embeddings(repo_info, comment_id):
     """
     Processes the repository by cloning, computing embeddings, and storing them. Always performs a fresh setup.
 
@@ -503,7 +506,7 @@ def process_and_store_embeddings(repo_info,comment_id):
     # Store repo and embeddings
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], repo_info.get('comment_id'),
                           "📚 **Storing Embeddings**: Storing repository information and embeddings in the database.")
-    send_initialized_data_to_db(repo_document, code_file_documents)
+    send_initialized_data_to_db(repo_document, code_file_documents, filtered_files)
 
 
 def clean_embedding_paths_for_db(preprocessed_files, repo_dir):
@@ -627,7 +630,7 @@ def extract_and_validate_repo_info(data):
 # ======================================================================================================================
 # Handler Methods
 # ======================================================================================================================
-def send_initialized_data_to_db(repo_info, code_files):
+def send_initialized_data_to_db(repo_info, code_files, filtered_files):
     """
     Stores the repo document in the 'repos' collection and each code file document in the 'code_files' collection.
 
@@ -645,6 +648,46 @@ def send_initialized_data_to_db(repo_info, code_files):
             return_document=True  # Retrieve the updated document
         )
         repo_id = repo['_id']  # Get the `_id` field of the repository document
+
+        # Insert files to code collection here
+        for file_path in map(str, filtered_files):  # Explicitly convert each file_path to a string
+            # Now, file_path is guaranteed to be a string
+            try:
+                # Read file in binary mode to detect encoding
+                with open(file_path, "rb") as file:  # Open file in binary mode
+                    raw_data = file.read()  # Read raw bytes from the file
+                    result = chardet.detect(raw_data)  # Detect encoding
+                    encoding = result['encoding']  # Get the detected encoding
+                    print(f"Detected encoding for {file_path}: {encoding}")
+                
+                # Now open the file using the detected encoding
+                with open(file_path, "r", encoding=encoding) as file:
+                    code_content = file.read()
+                    print("Code content successfully read.")
+            
+            except FileNotFoundError:
+                logger.info(f"Error: The file at {file_path} was not found.")
+            except IOError as e:
+                logger.info(f"Error reading the file: {e}")
+            except UnicodeDecodeError as e:
+                logger.info(f"Error decoding file {file_path} with encoding {encoding}: {e}")
+            
+            # Create the document to store in the database
+            code_file_document = {
+                'repo_id' : repo_id,
+                'route': file_path,  # file_path is now guaranteed to be a string
+                'code content': code_content,
+                'last_updated': datetime.utcnow().isoformat() + 'Z'
+            }
+
+            # Store file content in the database
+            db.get_files_collection().replace_one(
+                {'repo_id': repo_id, 'route': file_path},
+                code_file_document,
+                upsert=True
+            )
+            logger.info(f"Stored embedding for file: {file_path}")
+
 
         # Use the repository `_id` (repo_id) as a foreign key in `code_files` collection
         for file_info in code_files:
