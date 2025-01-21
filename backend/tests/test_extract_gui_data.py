@@ -39,7 +39,10 @@ def test_extract_SC_terms():
 def test_extract_GS_terms():
     json_path = "backend/temp_testing/Execution-1.json"
 
-    expected_gs_terms = []
+    expected_gs_terms = [
+        "DashboardActivity",
+        "TemplateActivity"
+    ]
 
     extracted_terms = extract_gs_terms(json_path)
 
