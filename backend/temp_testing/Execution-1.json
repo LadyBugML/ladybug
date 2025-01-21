@@ -95544,7 +95544,7 @@
         "screen":
         {
             "activity": "io.github.zwieback.familyfinance.business.template.activity.TemplateActivity(Window\u003dMain)",
-            "window": "ACTIVITY:io.github.zwieback.familyfinance.debugio.github.zwieback.familyfinance.business.template.activity.TemplateActivity",
+            "window": "FRAGMENT:AddFeedFragment",
             "dynGuiComponents": [
             {
                 "activity": "io.github.zwieback.familyfinance.debugio.github.zwieback.familyfinance.business.template.activity.TemplateActivity",
@@ -96065,7 +96065,7 @@
         "screen":
         {
             "activity": "io.github.zwieback.familyfinance.business.dashboard.activity.DashboardActivity(Window\u003dMain)",
-            "window": "ACTIVITY:io.github.zwieback.familyfinance.debugio.github.zwieback.familyfinance.business.dashboard.activity.DashboardActivity",
+            "window": "FRAGMENT:SubscriptionFragment",
             "dynGuiComponents": [
             {
                 "activity": "io.github.zwieback.familyfinance.debugio.github.zwieback.familyfinance.business.dashboard.activity.DashboardActivity",
