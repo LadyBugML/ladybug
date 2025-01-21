@@ -53,9 +53,11 @@ def initialization():
         abort(400, description="Invalid JSON data")
 
     logger.info("Received data from /initialization request.")
-
+    print(data)
     repo_data = data.get('repoData')
     comment_id = data.get('comment_id')
+    if comment_id is None:
+        comment_id = -1
 
     repo_info = extract_and_validate_repo_info(repo_data)
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -108,8 +110,10 @@ def report():
     repository = data.get('repository')
     issue = data.get('issue')
     comment_id = data.get('comment_id')
+    if comment_id is None:
+        comment_id = -1
 
-    if not repository or not issue or not comment_id:
+    if not repository or not issue:
         abort(400, description="Missing 'repository' or 'issue' in the data")
 
     logger.info("Received data from /report request.")
@@ -266,6 +270,9 @@ def send_update_to_probot(owner, repo, comment_id, message):
         comment_id (int): The number of the issue or pull request to comment on.
         message (str): The message to post as a comment.
     """
+    if comment_id == -1:
+        return
+
     message_queue.put((owner, repo, comment_id, message))
     logger.debug(f"Enqueued message for Probot: {message}")
 
