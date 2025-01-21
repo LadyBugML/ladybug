@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # Initialize a thread-safe queue for messages
 message_queue = queue.Queue()
 
+
 # ======================================================================================================================
 # Routes
 # ======================================================================================================================
@@ -48,6 +49,21 @@ def initialization():
     - Stores embeddings along with repository information and SHA.
     - Always performs a fresh setup, overwriting any existing embeddings.
     """
+    """
+    Post Initialization Example:
+    POST localhost:5000/initialization
+    RAW JSON:
+    {
+    "repoData": {
+        "repo_url": "https://github.com/LadyBugML/ladybug-data-android",
+        "owner": "LadyBugML",
+        "repo_name": "ladybug-data-android",
+        "default_branch": "main",
+        "latest_commit_sha": "3b54e17143c9906585fc0df1b4d2a3f969a2de5a"
+        }
+    } 
+    """
+
     data = request.get_json()
     if not data:
         abort(400, description="Invalid JSON data")
@@ -64,7 +80,7 @@ def initialization():
                           "✅ **Initialization Started**: Validating repository information.")
 
     try:
-        process_and_store_embeddings(repo_info,comment_id)
+        process_and_store_embeddings(repo_info, comment_id)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "🌀 **Cloning Repository**: Repository cloned successfully.")
     except Exception as e:
@@ -231,6 +247,7 @@ def message_worker():
             # Optional: Add a short sleep to prevent tight loop in case of continuous errors
             time.sleep(5)
 
+
 def actual_send_update_to_probot(owner, repo, comment_id, message):
     """
     Sends an update message to the Probot /post-message endpoint to comment on a GitHub issue or pull request.
@@ -260,6 +277,7 @@ def actual_send_update_to_probot(owner, repo, comment_id, message):
         logger.error(f"Failed to post message to Probot: {e}")
         return False
 
+
 def send_update_to_probot(owner, repo, comment_id, message):
     """
     Enqueues a message to be sent to Probot.
@@ -275,6 +293,7 @@ def send_update_to_probot(owner, repo, comment_id, message):
 
     message_queue.put((owner, repo, comment_id, message))
     logger.debug(f"Enqueued message for Probot: {message}")
+
 
 def partial_clone(old_sha, repo_info):
     """
@@ -456,7 +475,7 @@ def update_embeddings_in_db(changed_files, clean_files, repo_info):
     logger.info("Database updated with added, modified, and removed files.")
 
 
-def process_and_store_embeddings(repo_info,comment_id):
+def process_and_store_embeddings(repo_info, comment_id):
     """
     Processes the repository by cloning, computing embeddings, and storing them. Always performs a fresh setup.
 
@@ -809,4 +828,3 @@ def store_embeddings_in_file_database(embeddings_document):
 # Start the background worker thread
 worker_thread = threading.Thread(target=message_worker, daemon=True)
 worker_thread.start()
-
