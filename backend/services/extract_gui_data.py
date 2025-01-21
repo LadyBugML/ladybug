@@ -57,11 +57,16 @@ def extract_gs_terms(json_path: str):
     # For each step extract step.screen.activity and/or step.screen.window value
     for step in last_4_steps:
         activity = step.get("screen", {}).get("activity", "")
+        window = step.get("screen", {}).get("window", "")
 
         # Use Regex to match Activity name before (Window.*)
-        # Note: Highly dependent on Trace Replayer data format. If it changes this line will have to change 
         gs_activity = re.search(r'(\w+)(\(Window.*\))', activity)
         if gs_activity:
             gs_terms.add(gs_activity.group(1))
+
+        # Use Regex to match windows only if the FRAGMENT tag is present
+        gs_window = re.search(r'FRAGMENT:(.+)', window)
+        if gs_window:
+            gs_terms.add(gs_window.group(1))
 
     return list(gs_terms)
