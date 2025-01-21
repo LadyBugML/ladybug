@@ -1,4 +1,5 @@
 import json
+import re
 
 def extract_sc_terms(json_path: str):
     """
@@ -34,3 +35,33 @@ def extract_sc_terms(json_path: str):
         sc_terms.discard(word)
 
     return list(sc_terms)
+
+def extract_gs_terms(json_path: str):
+    """
+    Extracts all GUI Screen terms from the Execution.json. Assumes that the buggy state is the last state in the trace.
+
+    Args: 
+        json_path (str): Path to the Execution.json on the server
+
+    Returns:
+        List[str]: List of strings representing GS terms
+    """
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    # Get last 4 screens from the trace
+    last_4_steps = data["steps"][-4:]
+    gs_terms = set()
+
+    # For each step extract step.screen.activity and/or step.screen.window value
+    for step in last_4_steps:
+        activity = step.get("screen", {}).get("activity", "")
+
+        # Use Regex to match Activity name before (Window.*)
+        # Note: Highly dependent on Trace Replayer data format. If it changes this line will have to change 
+        gs_activity = re.search(r'(\w+)(\(Window.*\))', activity)
+        if gs_activity:
+            gs_terms.add(gs_activity.group(1))
+
+    return list(gs_terms)
