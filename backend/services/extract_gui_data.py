@@ -1,3 +1,4 @@
+import glob
 import json
 import re
 
@@ -70,3 +71,36 @@ def extract_gs_terms(json_path: str):
             gs_terms.add(gs_window.group(1))
 
     return list(gs_terms)
+
+def get_file_content(self, file_name):
+		# Read the file
+		file_content = open(file_name, "r")
+		file_content = file_content.read()
+		return file_content
+
+def check_if_term_exist(self, search_terms, file_content):
+		is_matched_keyword = False
+		for keyword in search_terms:
+			if keyword in file_content:
+				match_keyword = True
+
+		return is_matched_keyword
+
+def map_sc_terms_to_files(java_files_data: list[dict], sc_terms: list[str]):
+    """
+    Maps SC terms to files using a brute force approach.
+
+    Args: 
+        java_files_data (list[dict]): A list of dictionaries where each dictionary represents a file with its path and contents
+
+    Returns: 
+        sc_files (list[str]): A list of strings with each string being the file path of a mapped SC file
+    """
+    sc_files = []
+    for file_data in java_files_data:
+        search_term_exist = check_if_term_exist(sc_terms, file_data["contents"])
+
+        if search_term_exist == True:
+            sc_files.append(file_data["path"])
+
+    return sc_files
