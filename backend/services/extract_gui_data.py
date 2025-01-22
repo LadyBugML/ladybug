@@ -72,19 +72,25 @@ def extract_gs_terms(json_path: str):
 
     return list(gs_terms)
 
-def get_file_content(self, file_name):
-		# Read the file
-		file_content = open(file_name, "r")
-		file_content = file_content.read()
-		return file_content
+def check_if_term_exist(search_terms, file_content):
+    """
+    Checks if any search terms (SC or GS terms) exist in the contents of a file. This function does NOT map
+    any search terms to file paths.
+    Credit: Junayed Mahmud
 
-def check_if_term_exist(self, search_terms, file_content):
-		is_matched_keyword = False
-		for keyword in search_terms:
-			if keyword in file_content:
-				match_keyword = True
+    Args:
+        search_terms (list[str]): A list of strings representing either SC or GS terms
+        file_content (str): The contents of a Java file
 
-		return is_matched_keyword
+    Returns:
+        is_matched_keyword (bool): True if a search term was found in the file contents, otherwise false.
+    """    
+    is_matched_keyword = False
+    for keyword in search_terms:
+        if keyword in file_content:
+            is_matched_keyword = True
+
+    return is_matched_keyword
 
 def map_sc_terms_to_files(java_files_data: list[dict], sc_terms: list[str]):
     """
