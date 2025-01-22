@@ -190,7 +190,6 @@ export default (app, {getRouter}) => {
                 repository: repoData,
                 comment_id
             };
-
             try {
                 const flaskResponse = await axios.post('http://localhost:5000/report', fullData, {
                     headers: {
