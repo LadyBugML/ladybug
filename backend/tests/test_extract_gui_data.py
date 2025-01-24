@@ -3,7 +3,7 @@ from services.extract_gui_data import extract_gs_terms
 from services.extract_gui_data import get_boosted_files
 
 def test_extract_SC_terms():
-    json_path = "temp_testing/Execution-1.json"
+    json_path = "backend/temp_testing/Execution-1.json"
 
     expected_sc_terms = [
         "action_bar_root",
@@ -38,7 +38,7 @@ def test_extract_SC_terms():
     assert extracted_terms == expected_sc_terms, f"Mismatch: {extracted_terms}"
 
 def test_extract_GS_terms():
-    json_path = "temp_testing/Execution-1.json"
+    json_path = "backend/temp_testing/Execution-1.json"
 
     expected_gs_terms = [
         'AddFeedFragment',
@@ -60,17 +60,17 @@ def test_get_boosted_files():
     ]
 
     source_code_files = [
-        ('path/to/AddFeedFragment', 'AddFeedFragment', 'mock code'),
+        ('path/to/AddFeedFragment.java', 'AddFeedFragment.java', 'mock code'),
         ('path/to/file1', 'file1', 'mock code'),
         ('path/to/file2', 'file1', 'mock code'),
-        ('path/to/DashboardActivity', 'DashboardActivity', 'mock code'),
+        ('path/to/DashboardActivity.java', 'DashboardActivity.java', 'mock code'),
         ('path/to/file3', 'file1', 'mock code'),
         ('path/to/file1', 'file1', 'mock code'),
     ]
 
     expected_boosted_files = [
-        'path/to/AddFeedFragment',
-        'path/to/DashboardActivity'
+        'path/to/AddFeedFragment.java',
+        'path/to/DashboardActivity.java'
     ]
 
     boosted_files = get_boosted_files(source_code_files, gs_terms)
