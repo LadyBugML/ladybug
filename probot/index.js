@@ -5,6 +5,7 @@
 
 import {sendRepo} from './components/sendRepo.js';
 import {sendRatings} from './components/sendRatings.js';
+import { sendAttachment } from './components/sendAttachment.js';
 import axios from "axios";
 import express from "express";
 // At the top of your file, initialize the map
@@ -134,7 +135,7 @@ export default (app, {getRouter}) => {
     app.on('issues.opened', async (context) => {
         const issue = context.payload.issue;
         const repository = context.payload.repository;
-         const installationId = context.payload.installation.id;
+        const installationId = context.payload.installation.id;
 
         console.log(`Issue #${issue.number} opened in repository ${repository.full_name}`);
 
@@ -146,6 +147,8 @@ export default (app, {getRouter}) => {
 
         // Prepare data to send to Flask backend
         const issueBody = issue.body || issue.title;
+
+        sendAttachment(issue.body);
 
         repoToInstallationMap.set(repository.full_name, installationId);
         console.log("Current repoToInstallationMap:", Array.from(repoToInstallationMap.entries()));
