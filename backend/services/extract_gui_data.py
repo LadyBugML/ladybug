@@ -70,3 +70,24 @@ def extract_gs_terms(json_path: str):
             gs_terms.add(gs_window.group(1))
 
     return list(gs_terms)
+
+def get_boosted_files(source_code_files: list[tuple], gs_terms: list[str]):
+    """
+    Maps GS terms to files via matching file names
+
+    Args:
+        source_code_files (list[tuple]): A list of source code file tuples that contain (file_path, file_name, file_content)
+        gs_terms (list[str]): A list of screen names from execution data
+
+    Returns:
+        gs_files: List of file paths of matching gs_files that will be boosted 
+    """
+    gs_files = []
+
+    # Go through each source code file
+    for file in source_code_files:
+        # Check if the file name matches any of the GS terms and add the file path
+        if any(gs_term in file[1] for gs_term in gs_terms):
+            gs_files.append(file[0])
+
+    return gs_files

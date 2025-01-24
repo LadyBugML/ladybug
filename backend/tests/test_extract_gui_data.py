@@ -1,5 +1,6 @@
 from services.extract_gui_data import extract_sc_terms
 from services.extract_gui_data import extract_gs_terms
+from services.extract_gui_data import get_boosted_files
 
 def test_extract_SC_terms():
     json_path = "temp_testing/Execution-1.json"
@@ -49,3 +50,29 @@ def test_extract_GS_terms():
     extracted_terms = sorted(extract_gs_terms(json_path))
 
     assert extracted_terms == expected_gs_terms, f"Mismatch: {extracted_terms}"
+
+def test_get_boosted_files():
+    gs_terms = [
+        'AddFeedFragment',
+        'DashboardActivity',
+        'SubscriptionFragment',
+        'TemplateActivity'
+    ]
+
+    source_code_files = [
+        ('path/to/AddFeedFragment', 'AddFeedFragment', 'mock code'),
+        ('path/to/file1', 'file1', 'mock code'),
+        ('path/to/file2', 'file1', 'mock code'),
+        ('path/to/DashboardActivity', 'DashboardActivity', 'mock code'),
+        ('path/to/file3', 'file1', 'mock code'),
+        ('path/to/file1', 'file1', 'mock code'),
+    ]
+
+    expected_boosted_files = [
+        'path/to/AddFeedFragment',
+        'path/to/DashboardActivity'
+    ]
+
+    boosted_files = get_boosted_files(source_code_files, gs_terms)
+
+    assert boosted_files == expected_boosted_files, f"Mismatch: {boosted_files}"
