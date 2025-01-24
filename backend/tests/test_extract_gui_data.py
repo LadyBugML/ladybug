@@ -3,7 +3,7 @@ from services.extract_gui_data import extract_gs_terms
 from services.extract_gui_data import get_boosted_files
 
 def test_extract_SC_terms():
-    json_path = "backend/temp_testing/Execution-1.json"
+    json_path = "temp_testing/Execution-1.json"
 
     expected_sc_terms = [
         "action_bar_root",
@@ -38,7 +38,7 @@ def test_extract_SC_terms():
     assert extracted_terms == expected_sc_terms, f"Mismatch: {extracted_terms}"
 
 def test_extract_GS_terms():
-    json_path = "backend/temp_testing/Execution-1.json"
+    json_path = "temp_testing/Execution-1.json"
 
     expected_gs_terms = [
         'AddFeedFragment',
