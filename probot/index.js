@@ -192,7 +192,7 @@ export default (app, {getRouter}) => {
             const fullData = {
                 issue: issueBody,
                 repository: repoData,
-                jsonData: jsonData,
+                jsonContent: jsonContent,
                 comment_id
             };
 
