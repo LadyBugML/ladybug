@@ -71,10 +71,9 @@ def extract_gs_terms(json_path: str):
 
     return list(gs_terms)
 
-def check_if_term_exist(search_terms, file_content):
+def check_if_sc_term_exists(search_terms, file_content):
     """
-    Checks if any search terms (SC or GS terms) exist in the contents of a file. This function does NOT map
-    any search terms to file paths.
+    Checks if any SC terms exist in the contents of a file.
     Credit: Junayed Mahmud
 
     Args:
