@@ -189,6 +189,23 @@ def report():
             send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                                   f"❌ **Embeddings Update Failed**: {e}")
             abort(500, description=str(e))
+    # Fetch all source code files from DB
+    try:
+        query = {
+            "repo_name": repo_info['repo_name'],
+            "owner": repo_info['owner']
+        }
+        # Get the repo document for the query     
+        repo_collection = db.get_repo_collection()
+        query_repo = repo_collection.find_one(query)
+        repo_files = db.get_repo_file_contents(query_repo["_id"])
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "📚 **Source Code Files Fetched**: Retrieved all source code files from the database.")
+    except Exception as e:
+        logger.info('Failed to find repo.')
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "❌ **Source Code Retrieval Failed**: Could not fetch source code from the database.")
+        return jsonify({"message": "Failed to find repo."}), 405
 
     # FETCH ALL EMBEDDINGS FROM DB
     try:
