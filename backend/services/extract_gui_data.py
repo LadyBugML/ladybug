@@ -1,4 +1,3 @@
-import glob
 import json
 import re
 
@@ -92,21 +91,22 @@ def check_if_term_exist(search_terms, file_content):
 
     return is_matched_keyword
 
-def map_sc_terms_to_files(java_files_data: list[dict], sc_terms: list[str]):
+def build_corpus(source_code_files: list[tuple], sc_terms: list[str]):
     """
     Maps SC terms to files using a brute force approach.
 
     Args: 
-        java_files_data (list[dict]): A list of dictionaries where each dictionary represents a file with its path and contents
+        source_code_files (list[tuple]): A list of source code file tuples that contain (file_path, file_name, file_content)
 
     Returns: 
         sc_files (list[str]): A list of strings with each string being the file path of a mapped SC file
     """
     sc_files = []
-    for file_data in java_files_data:
-        search_term_exist = check_if_term_exist(sc_terms, file_data["contents"])
+
+    for file in source_code_files:
+        search_term_exist = check_if_term_exist(sc_terms, file[2])
 
         if search_term_exist == True:
-            sc_files.append(file_data["path"])
+            sc_files.append(file[0])
 
     return sc_files
