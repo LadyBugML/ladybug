@@ -396,6 +396,55 @@ def process_and_patch_embeddings(changed_files, repo_info):
     repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
 
     # Add updating to the files db here
+    repo_id = repo_info['_id']
+
+    for change_type, files in changed_files.items():
+        for file in files:
+            route = str(file)
+            print(route)
+
+            if change_type == 'removed':
+                db.get_files_collection.delete_one(
+                    {'repo_id': repo_id, 'route': route}
+                )
+
+            else:
+                try:
+                    # Read file in binary mode to detect encoding
+                    with open(route, "rb") as file:  # Open file in binary mode
+                        raw_data = file.read()  # Read raw bytes from the file
+                        result = chardet.detect(raw_data)  # Detect encoding
+                        encoding = result['encoding']  # Get the detected encoding
+                        print(f"Detected encoding for {route}: {encoding}")
+                    
+                    # Now open the file using the detected encoding
+                    with open(route, "r", encoding=encoding) as file:
+                        code_content = file.read()
+                        print("Code content successfully read.")
+                
+                except FileNotFoundError:
+                    logger.info(f"Error: The file at {route} was not found.")
+                except IOError as e:
+                    logger.info(f"Error reading the file: {e}")
+                except UnicodeDecodeError as e:
+                    logger.info(f"Error decoding file {route} with encoding {encoding}: {e}")
+            
+                # Create the document to store in the database
+                code_file_document = {
+                    'repo_id' : repo_id,
+                    'route': route,  # file_path is now guaranteed to be a string
+                    'code content': code_content,
+                    'last_updated': datetime.utcnow().isoformat() + 'Z'
+                }
+
+                # Store file content in the database
+                db.get_files_collection().replace_one(
+                    {'repo_id': repo_id, 'route': route},
+                    code_file_document,
+                    upsert=True
+                )
+                logger.info(f"Stored embedding for file: {route}")
+
 
     # Preprocess the changed source code files
     preprocessed_files = preprocess_source_code(repo_dir)
