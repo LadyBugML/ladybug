@@ -148,7 +148,7 @@ export default (app, {getRouter}) => {
         // Prepare data to send to Flask backend
         const issueBody = issue.body || issue.title;
 
-        sendAttachment(issue.body);
+        sendAttachment(issue.body, context);
 
         repoToInstallationMap.set(repository.full_name, installationId);
         console.log("Current repoToInstallationMap:", Array.from(repoToInstallationMap.entries()));
