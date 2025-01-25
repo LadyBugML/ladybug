@@ -65,6 +65,18 @@ def test_build_corpus():
         ('path/to/file1', 'file1', 'mock code'),
         ('path/to/file2', 'file1', 'mock code'),
         ('path/to/ToolbarScreen.java', 'ToolbarScreen.java', 'public static void main(String[] args) { int toolbar = 5;}'),
+        ('path/to/file3', 'file1', 'mock code'),
+        ('path/to/file1', 'file1', 'mock code'),
+    ]
+
+    expected_corpus_files = [
+        'path/to/Expenses.java',
+        'path/to/ToolbarScreen.java'
+    ]
+
+    corpus_files = build_corpus(source_code_files, sc_terms)
+
+    assert corpus_files == expected_corpus_files, f"Mismatch: {corpus_files}"
 
 def test_get_boosted_files():
     gs_terms = [
@@ -82,15 +94,6 @@ def test_get_boosted_files():
         ('path/to/file3', 'file1', 'mock code'),
         ('path/to/file1', 'file1', 'mock code'),
     ]
-
-    expected_corpus_files = [
-        'path/to/Expenses.java',
-        'path/to/ToolbarScreen.java'
-    ]
-
-    corpus_files = build_corpus(source_code_files, sc_terms)
-
-    assert corpus_files == expected_corpus_files, f"Mismatch: {corpus_files}"
 
     expected_boosted_files = [
         'path/to/AddFeedFragment.java',
