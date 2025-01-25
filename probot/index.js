@@ -5,7 +5,7 @@
 
 import {sendRepo} from './components/sendRepo.js';
 import {sendRatings} from './components/sendRatings.js';
-import { sendAttachment } from './components/sendAttachment.js';
+import { sendTrace } from './components/sendTrace.js';
 import axios from "axios";
 import express from "express";
 // At the top of your file, initialize the map
@@ -184,15 +184,15 @@ export default (app, {getRouter}) => {
             const comment_id = initialComment.data.id;
 
             // Get the attachment JSON data
-            const jsonContent = await sendAttachment(issue.body, context);
-            if(!jsonContent){
-                console.error(`sendAttachment returned null for ${repository.full_name}.`);
+            const trace = await sendTrace(issue.body, context);
+            if(!trace){
+                console.error(`sendTrace returned null for ${repository.full_name}.`);
             }
          
             const fullData = {
                 issue: issueBody,
                 repository: repoData,
-                jsonContent: jsonContent,
+                trace: trace,
                 comment_id
             };
 
