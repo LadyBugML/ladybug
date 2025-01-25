@@ -186,7 +186,7 @@ export default (app, {getRouter}) => {
             // Get the attachment JSON data
             const trace = await sendTrace(issue.body, context);
             if(!trace){
-                console.error(`sendTrace returned null for ${repository.full_name}.`);
+                console.error(`sendTrace returned null for ${issue.number}.`);
             }
          
             const fullData = {

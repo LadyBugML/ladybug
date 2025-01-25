@@ -68,6 +68,9 @@ export const sendTrace = async (issueBody, context) => {
 
         console.log("Valid JSON schema detected.");
         const traceString = JSON.stringify(traceContent);
+        
+        // Uncomment to test JSON parse
+        // await replyWithTrace(context, issue.number, traceString);
 
         return traceString;
     } catch (error) {
@@ -76,3 +79,23 @@ export const sendTrace = async (issueBody, context) => {
         return null;
     }
 };
+
+/** 
+ * TESTING METHOD
+ * Replies to the issue with an parsed trace.
+ * @param {Object} context - The Probot context object.
+ * @param {number} issueNumber - The issue number to reply to.
+ * @param {string} traceMessage - The error message to include in the comment.
+ */
+export const replyWithTrace = async (context, issueNumber, traceMessage) => {
+    const commentBody = `Here's the parsed trace string from the issue body (FOR TESING PURPOSES)\n\n ${traceMessage}`;
+  
+    const issueComment = context.issue({ body: commentBody, issue_number: issueNumber });
+  
+    try {
+      await context.octokit.issues.createComment(issueComment);
+      console.log(`Posted trace message to issue #${issueNumber}.`);
+    } catch (err) {
+      console.error('Failed to post trace message to issue:', err.message);
+    }
+  };
