@@ -24,11 +24,10 @@ export const sendAttachment = async (issueBody, context) => {
     try {
         // Get respone and parse JSON content
         const jsonContentResponse = await fetch(jsonFileLink);
-        jsonContent = await jsonContentResponse.json();
+        const jsonContent = await jsonContentResponse.json();
+        const jsonString = JSON.stringify(jsonContent)
 
-        console.log(typeof(jsonContent));
-
-        return jsonContent;
+        return jsonString;
     } catch (error) {
         console.error(`Error fetching JSON content: ${error.message}`);
         await replyWithError(context, issue.number, "An error occurred when trying to parse the JSON file. Rankings will be calculated without GUI data.");

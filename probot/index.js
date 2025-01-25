@@ -130,8 +130,6 @@ export default (app, {getRouter}) => {
     }
 });
 
-
-
     app.on('issues.opened', async (context) => {
         const issue = context.payload.issue;
         const repository = context.payload.repository;
@@ -147,8 +145,6 @@ export default (app, {getRouter}) => {
 
         // Prepare data to send to Flask backend
         const issueBody = issue.body || issue.title;
-
-        sendAttachment(issue.body, context);
 
         repoToInstallationMap.set(repository.full_name, installationId);
         console.log("Current repoToInstallationMap:", Array.from(repoToInstallationMap.entries()));
@@ -187,12 +183,19 @@ export default (app, {getRouter}) => {
             // Store the comment ID
             const comment_id = initialComment.data.id;
 
-
+            // Get the attachment JSON data
+            const jsonContent = await sendAttachment(issue.body, context);
+            if(!jsonContent){
+                console.error(`sendAttachment returned null for ${repository.full_name}.`);
+            }
+         
             const fullData = {
                 issue: issueBody,
                 repository: repoData,
+                jsonData: jsonData,
                 comment_id
             };
+
             try {
                 const flaskResponse = await axios.post('http://localhost:5000/report', fullData, {
                     headers: {
