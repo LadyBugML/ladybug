@@ -103,7 +103,7 @@ def build_corpus(source_code_files: list[tuple], sc_terms: list[str]):
     sc_files = []
 
     for file in source_code_files:
-        search_term_exist = check_if_term_exist(sc_terms, file[2])
+        search_term_exist = check_if_sc_term_exists(sc_terms, file[2])
 
         if search_term_exist == True:
             sc_files.append(file[0])
