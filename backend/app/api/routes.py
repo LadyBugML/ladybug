@@ -408,7 +408,7 @@ def process_and_patch_embeddings(changed_files, repo_info):
                     {'repo_id': repo_id, 'route': route}
                 )
 
-            else:
+            elif :
                 try:
                     # Read file in binary mode to detect encoding
                     with open(route, "rb") as file:  # Open file in binary mode
@@ -444,6 +444,9 @@ def process_and_patch_embeddings(changed_files, repo_info):
                     upsert=True
                 )
                 logger.info(f"Stored embedding for file: {route}")
+
+            else:
+                print("file not in db")
 
 
     # Preprocess the changed source code files
