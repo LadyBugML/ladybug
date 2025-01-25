@@ -71,6 +71,45 @@ def extract_gs_terms(json_path: str):
 
     return list(gs_terms)
 
+def check_if_sc_term_exists(search_terms, file_content):
+    """
+    Checks if any SC terms exist in the contents of a file.
+    Credit: Junayed Mahmud
+
+    Args:
+        search_terms (list[str]): A list of strings representing either SC or GS terms
+        file_content (str): The contents of a Java file
+
+    Returns:
+        is_matched_keyword (bool): True if a search term was found in the file contents, otherwise false.
+    """    
+    is_matched_keyword = False
+    for keyword in search_terms:
+        if keyword in file_content:
+            is_matched_keyword = True
+
+    return is_matched_keyword
+
+def build_corpus(source_code_files: list[tuple], sc_terms: list[str]):
+    """
+    Maps SC terms to files using a brute force approach.
+
+    Args: 
+        source_code_files (list[tuple]): A list of source code file tuples that contain (file_path, file_name, file_content)
+
+    Returns: 
+        sc_files (list[str]): A list of strings with each string being the file path of a mapped SC file
+    """
+    sc_files = []
+
+    for file in source_code_files:
+        search_term_exist = check_if_sc_term_exists(sc_terms, file[2])
+
+        if search_term_exist == True:
+            sc_files.append(file[0])
+
+    return sc_files
+
 def get_boosted_files(source_code_files: list[tuple], gs_terms: list[str]):
     """
     Maps GS terms to files via matching file names
