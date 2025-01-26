@@ -21,7 +21,7 @@ class Database:
             cls._instance.__client = None
         return cls._instance
     
-    def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings', files_collection = 'files'):
+    def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings', files_collection='files'):
         # Set up basic logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -93,6 +93,27 @@ class Database:
             embeddings.append((document.get("route"), document.get("embedding")))
 
         return embeddings
+    
+    def get_repo_file_contents(self, repo_id):
+        """
+        Gets all source code file contents from a specific repository in the 'files' collection
+
+        Args: 
+            repo_id of desired repository
+
+        Returns:
+            A list of tuples with the (file_path, file_name, file_contents)
+        """
+
+        files = []
+        results = self.__files.find({"repo_id": repo_id})
+
+        for document in results:
+            file_path = document.get("route")
+            file_name = os.path.basename(file_path)
+            files.append((file_path, file_name, document.get("code content")))
+
+        return files
     
     def insert_embeddings_document(self, embeddings_document, **kwargs):
         self.logger.debug("Storing embeddings in database.")
