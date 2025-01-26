@@ -408,7 +408,7 @@ def process_and_patch_embeddings(changed_files, repo_info):
                     {'repo_id': repo_id, 'route': route}
                 )
 
-            elif :
+            elif change_type == ('added' or 'modified'):
                 try:
                     # Read file in binary mode to detect encoding
                     with open(route, "rb") as file:  # Open file in binary mode
