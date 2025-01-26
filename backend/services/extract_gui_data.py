@@ -1,7 +1,7 @@
 import json
 import re
 
-def extract_sc_terms(json_path: str):
+def extract_sc_terms(json_string: str):
     """
     Extracts all Screen Components terms from the Execution.json. Assumes that the buggy state is the last state in the trace.
     The returned list has NOT yet been preprocessed, so terms include underscores and other puctuation.
@@ -11,8 +11,7 @@ def extract_sc_terms(json_path: str):
     Returns:
         List[str]: List of strings representing SC terms
     """
-    with open(json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    data = json.loads(json_string)
 
     last_4_steps = data["steps"][-4:]
     sc_terms = set()
@@ -36,7 +35,7 @@ def extract_sc_terms(json_path: str):
 
     return list(sc_terms)
 
-def extract_gs_terms(json_path: str):
+def extract_gs_terms(json_string: str):
     """
     Extracts all GUI Screen terms from the Execution.json. Assumes that the buggy state is the last state in the trace.
 
@@ -47,8 +46,7 @@ def extract_gs_terms(json_path: str):
         List[str]: List of strings representing GS terms
     """
 
-    with open(json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    data = json.loads(json_string)
 
     # Get last 4 screens from the trace
     last_4_steps = data["steps"][-4:]

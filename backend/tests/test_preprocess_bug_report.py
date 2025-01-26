@@ -62,7 +62,7 @@ def setup_bug_report_file(tmp_path):
 def test_preprocess_bug_report(setup_bug_report_file):
     # Set up paths
     bug_report_path = setup_bug_report_file
-    result = preprocess_bug_report(bug_report_path)
+    result = preprocess_bug_report(bug_report_path, [])
 
     result_tensor = torch.tensor(result)
     expected_tensor = torch.tensor(EXPECTED_BUG_REPORT_EMBEDDING)
@@ -83,6 +83,6 @@ def test_bug_report_file_not_found(tmp_path):
     # Provide a nonexistent path for bug report file
     non_existent_file = tmp_path / "non_existent_bug_report.txt"
     
-    result = preprocess_bug_report(non_existent_file)
+    result = preprocess_bug_report(non_existent_file, [])
     assert result is None, "Expected None when bug report file is not found"
 
