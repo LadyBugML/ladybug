@@ -23,6 +23,7 @@ from services.preprocess_bug_report import preprocess_bug_report
 from services.preprocess_source_code import preprocess_source_code
 from services.extract_gui_data import extract_gs_terms
 from services.extract_gui_data import extract_sc_terms
+from services.extract_gui_data import build_corpus
 from services.filter import filter_files
 from experimental_unixcoder.bug_localization import BugLocalization
 
@@ -215,6 +216,9 @@ def report():
                               "❌ **Source Code Retrieval Failed**: Could not fetch source code from the database.")
         return jsonify({"message": "Failed to find repo."}), 405
 
+    corpus = build_corpus(repo_files, sc_terms)
+    boosted_files = get_boosted_files(repo_files, gs_terms)
+
     # FETCH ALL EMBEDDINGS FROM DB
     try:
         query = {
@@ -235,15 +239,16 @@ def report():
     bug_localizer = BugLocalization()
 
     ranked_files = bug_localizer.rank_files(preprocessed_bug_report, repo_embeddings)
+    reranked_files = reorder_rankings(ranked_files, boosted_files)
 
     ranked_list = []
 
-    for i in range(min(10, len(ranked_files))):
-        ranked_list.append(ranked_files[i])
+    for i in range(min(10, len(reranked_files))):
+        ranked_list.append(reranked_files[i])
 
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                           "🎯 **Bug Localization Completed**: Ranked relevant files identified.")
-    return jsonify({"message": "Report processed successfully", "ranked_files": ranked_list}), 200
+    return jsonify({"message": "Report processed successfully", "ranked_files": reranked_files}), 200
 
 
 # ======================================================================================================================
