@@ -72,6 +72,14 @@ class Database:
         """
         return self.__embeddings
     
+    def get_files_collection(self):
+        """
+        Gets the reference to the files collection on MongoDB.
+
+        :return: The embeddings collection.
+        """
+        return self.__files
+    
     def get_repo_files_embeddings(self, repo_id):
         """
         Gets the embeddings for all the files in a repo.
