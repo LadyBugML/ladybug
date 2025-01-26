@@ -453,42 +453,7 @@ def process_and_patch_embeddings(changed_files, repo_info):
                 )
 
             else:
-                try:
-                    # Read file in binary mode to detect encoding
-                    with open(route, "rb") as file:  # Open file in binary mode
-                        raw_data = file.read()  # Read raw bytes from the file
-                        result = chardet.detect(raw_data)  # Detect encoding
-                        encoding = result['encoding']  # Get the detected encoding
-                        print(f"Detected encoding for {route}: {encoding}")
-                    
-                    # Now open the file using the detected encoding
-                    with open(route, "r", encoding=encoding) as file:
-                        code_content = file.read()
-                        print("Code content successfully read.")
-                
-                except FileNotFoundError:
-                    logger.info(f"Error: The file at {route} was not found.")
-                except IOError as e:
-                    logger.info(f"Error reading the file: {e}")
-                except UnicodeDecodeError as e:
-                    logger.info(f"Error decoding file {route} with encoding {encoding}: {e}")
-            
-                # Create the document to store in the database
-                code_file_document = {
-                    'repo_id' : repo_id,
-                    'route': route,  # file_path is now guaranteed to be a string
-                    'code content': code_content,
-                    'last_updated': datetime.utcnow().isoformat() + 'Z'
-                }
-
-                # Store file content in the database
-                db.get_files_collection().replace_one(
-                    {'repo_id': repo_id, 'route': route},
-                    code_file_document,
-                    upsert=True
-                )
-                logger.info(f"Stored embedding for file: {route}")
-
+                insert_to_code_db(route, repo_id)
 
     # Preprocess the changed source code files
     preprocessed_files = preprocess_source_code(repo_dir)
@@ -743,44 +708,8 @@ def send_initialized_data_to_db(repo_info, code_files, filtered_files):
         repo_id = repo['_id']  # Get the `_id` field of the repository document
 
         # Insert files to code collection here
-        for file_path in map(str, filtered_files):  # Explicitly convert each file_path to a string
-            # Now, file_path is guaranteed to be a string
-            try:
-                # Read file in binary mode to detect encoding
-                with open(file_path, "rb") as file:  # Open file in binary mode
-                    raw_data = file.read()  # Read raw bytes from the file
-                    result = chardet.detect(raw_data)  # Detect encoding
-                    encoding = result['encoding']  # Get the detected encoding
-                    print(f"Detected encoding for {file_path}: {encoding}")
-                
-                # Now open the file using the detected encoding
-                with open(file_path, "r", encoding=encoding) as file:
-                    code_content = file.read()
-                    print("Code content successfully read.")
-            
-            except FileNotFoundError:
-                logger.info(f"Error: The file at {file_path} was not found.")
-            except IOError as e:
-                logger.info(f"Error reading the file: {e}")
-            except UnicodeDecodeError as e:
-                logger.info(f"Error decoding file {file_path} with encoding {encoding}: {e}")
-            
-            # Create the document to store in the database
-            code_file_document = {
-                'repo_id' : repo_id,
-                'route': file_path,  # file_path is now guaranteed to be a string
-                'code content': code_content,
-                'last_updated': datetime.utcnow().isoformat() + 'Z'
-            }
-
-            # Store file content in the database
-            db.get_files_collection().replace_one(
-                {'repo_id': repo_id, 'route': file_path},
-                code_file_document,
-                upsert=True
-            )
-            logger.info(f"Stored embedding for file: {file_path}")
-
+        for file_path in map(str, filtered_files):
+            insert_to_code_db(file_path, repo_id)
 
         # Use the repository `_id` (repo_id) as a foreign key in `code_files` collection
         for file_info in code_files:
@@ -936,6 +865,42 @@ def store_embeddings_in_file_database(embeddings_document):
         logger.error(f"Failed to write to embeddings records file: {e}")
         raise
 
+def insert_to_code_db(route, repo_id):
+    try:
+        # Read file in binary mode to detect encoding
+        with open(route, "rb") as file:
+            raw_data = file.read()
+            result = chardet.detect(raw_data)
+            encoding = result['encoding']
+            print(f"Detected encoding for {route}: {encoding}")
+        
+        # Now open the file using the detected encoding
+        with open(route, "r", encoding=encoding) as file:
+            code_content = file.read()
+            print("Code content successfully read.")
+    
+    except FileNotFoundError:
+        logger.info(f"Error: The file at {route} was not found.")
+    except IOError as e:
+        logger.info(f"Error reading the file: {e}")
+    except UnicodeDecodeError as e:
+        logger.info(f"Error decoding file {route} with encoding {encoding}: {e}")
+
+    # Create the document to store in the database
+    code_file_document = {
+        'repo_id' : repo_id,
+        'route': route,
+        'code content': code_content,
+        'last_updated': datetime.utcnow().isoformat() + 'Z'
+    }
+
+    # Store file content in the database
+    db.get_files_collection().replace_one(
+        {'repo_id': repo_id, 'route': route},
+        code_file_document,
+        upsert=True
+    )
+    logger.info(f"Stored code for file: {route}")
 
 # Start the background worker thread
 worker_thread = threading.Thread(target=message_worker, daemon=True)
