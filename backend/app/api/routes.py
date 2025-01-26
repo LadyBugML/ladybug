@@ -227,7 +227,8 @@ def report():
         }
         repo_collection = db.get_repo_collection()
         query_repo = repo_collection.find_one(query)
-        repo_embeddings = db.get_repo_files_embeddings(query_repo["_id"])
+        repo_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
+        logger.info(repo_embeddings)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "📚 **Embeddings Fetched**: Retrieved all embeddings from the database.")
     except Exception as e:
