@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: my_flask_backend
+    image: ladybug-backend:latest
+    ports:
+      - "5000:5000"
+    env_file:
+      - backend/.env
+
+  probot:
+    build:
+      context: .
+      dockerfile: Dockerfile.probot
+    container_name: my_probot_app
+    image: ladybug-probot:latest
+    ports:
+      - "3000:3000"
+    env_file:
+      - probot/.env
