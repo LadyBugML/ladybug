@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # Initialize a thread-safe queue for messages
 message_queue = queue.Queue()
 
+
 # ======================================================================================================================
 # Routes
 # ======================================================================================================================
@@ -49,21 +50,38 @@ def initialization():
     - Stores embeddings along with repository information and SHA.
     - Always performs a fresh setup, overwriting any existing embeddings.
     """
+    """
+    Post Initialization Example:
+    POST localhost:5000/initialization
+    RAW JSON:
+    {
+    "repoData": {
+        "repo_url": "https://github.com/LadyBugML/ladybug-data-android",
+        "owner": "LadyBugML",
+        "repo_name": "ladybug-data-android",
+        "default_branch": "main",
+        "latest_commit_sha": "3b54e17143c9906585fc0df1b4d2a3f969a2de5a"
+        }
+    } 
+    """
+
     data = request.get_json()
     if not data:
         abort(400, description="Invalid JSON data")
 
     logger.info("Received data from /initialization request.")
-
+    print(data)
     repo_data = data.get('repoData')
     comment_id = data.get('comment_id')
+    if comment_id is None:
+        comment_id = -1
 
     repo_info = extract_and_validate_repo_info(repo_data)
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                           "✅ **Initialization Started**: Validating repository information.")
 
     try:
-        process_and_store_embeddings(repo_info,comment_id)
+        process_and_store_embeddings(repo_info, comment_id)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "🌀 **Cloning Repository**: Repository cloned successfully.")
     except Exception as e:
@@ -108,9 +126,12 @@ def report():
 
     repository = data.get('repository')
     issue = data.get('issue')
+    trace = data.get('trace')
     comment_id = data.get('comment_id')
+    if comment_id is None:
+        comment_id = -1
 
-    if not repository or not issue or not comment_id:
+    if not repository or not issue:
         abort(400, description="Missing 'repository' or 'issue' in the data")
 
     logger.info("Received data from /report request.")
@@ -170,6 +191,23 @@ def report():
             send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                                   f"❌ **Embeddings Update Failed**: {e}")
             abort(500, description=str(e))
+    # Fetch all source code files from DB
+    try:
+        query = {
+            "repo_name": repo_info['repo_name'],
+            "owner": repo_info['owner']
+        }
+        # Get the repo document for the query     
+        repo_collection = db.get_repo_collection()
+        query_repo = repo_collection.find_one(query)
+        repo_files = db.get_repo_file_contents(query_repo["_id"])
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "📚 **Source Code Files Fetched**: Retrieved all source code files from the database.")
+    except Exception as e:
+        logger.info('Failed to find repo.')
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "❌ **Source Code Retrieval Failed**: Could not fetch source code from the database.")
+        return jsonify({"message": "Failed to find repo."}), 405
 
     # FETCH ALL EMBEDDINGS FROM DB
     try:
@@ -228,6 +266,7 @@ def message_worker():
             # Optional: Add a short sleep to prevent tight loop in case of continuous errors
             time.sleep(5)
 
+
 def actual_send_update_to_probot(owner, repo, comment_id, message):
     """
     Sends an update message to the Probot /post-message endpoint to comment on a GitHub issue or pull request.
@@ -257,6 +296,7 @@ def actual_send_update_to_probot(owner, repo, comment_id, message):
         logger.error(f"Failed to post message to Probot: {e}")
         return False
 
+
 def send_update_to_probot(owner, repo, comment_id, message):
     """
     Enqueues a message to be sent to Probot.
@@ -267,8 +307,12 @@ def send_update_to_probot(owner, repo, comment_id, message):
         comment_id (int): The number of the issue or pull request to comment on.
         message (str): The message to post as a comment.
     """
+    if comment_id == -1:
+        return
+
     message_queue.put((owner, repo, comment_id, message))
     logger.debug(f"Enqueued message for Probot: {message}")
+
 
 def partial_clone(old_sha, repo_info):
     """
@@ -899,4 +943,3 @@ def store_embeddings_in_file_database(embeddings_document):
 # Start the background worker thread
 worker_thread = threading.Thread(target=message_worker, daemon=True)
 worker_thread.start()
-

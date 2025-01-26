@@ -1,5 +1,7 @@
 from services.extract_gui_data import extract_sc_terms
 from services.extract_gui_data import extract_gs_terms
+from services.extract_gui_data import build_corpus
+from services.extract_gui_data import get_boosted_files
 
 def test_extract_SC_terms():
     json_path = "temp_testing/Execution-1.json"
@@ -49,3 +51,55 @@ def test_extract_GS_terms():
     extracted_terms = sorted(extract_gs_terms(json_path))
 
     assert extracted_terms == expected_gs_terms, f"Mismatch: {extracted_terms}"
+
+def test_build_corpus():
+    sc_terms = [
+        'add_expense',
+        'content',
+        'select_account',
+        'toolbar'
+    ]
+
+    source_code_files = [
+        ('path/to/Expenses.java', 'Expenses.java', 'public static void main(String[] args) { int add_expense = 5;}'),
+        ('path/to/file1', 'file1', 'mock code'),
+        ('path/to/file2', 'file1', 'mock code'),
+        ('path/to/ToolbarScreen.java', 'ToolbarScreen.java', 'public static void main(String[] args) { int toolbar = 5;}'),
+        ('path/to/file3', 'file1', 'mock code'),
+        ('path/to/file1', 'file1', 'mock code'),
+    ]
+
+    expected_corpus_files = [
+        'path/to/Expenses.java',
+        'path/to/ToolbarScreen.java'
+    ]
+
+    corpus_files = build_corpus(source_code_files, sc_terms)
+
+    assert corpus_files == expected_corpus_files, f"Mismatch: {corpus_files}"
+
+def test_get_boosted_files():
+    gs_terms = [
+        'AddFeedFragment',
+        'DashboardActivity',
+        'SubscriptionFragment',
+        'TemplateActivity'
+    ]
+
+    source_code_files = [
+        ('path/to/AddFeedFragment.java', 'AddFeedFragment.java', 'mock code'),
+        ('path/to/file1', 'file1', 'mock code'),
+        ('path/to/file2', 'file1', 'mock code'),
+        ('path/to/DashboardActivity.java', 'DashboardActivity.java', 'mock code'),
+        ('path/to/file3', 'file1', 'mock code'),
+        ('path/to/file1', 'file1', 'mock code'),
+    ]
+
+    expected_boosted_files = [
+        'path/to/AddFeedFragment.java',
+        'path/to/DashboardActivity.java'
+    ]
+
+    boosted_files = get_boosted_files(source_code_files, gs_terms)
+
+    assert boosted_files == expected_boosted_files, f"Mismatch: {boosted_files}"

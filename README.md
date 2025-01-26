@@ -27,7 +27,7 @@ Ladybug is a project that integrates a Probot GitHub bot with a Flask backend to
 
 ## Overview
 
-Ladybug automates bug localization by triggering an analysis whenever a new issue is created in your GitHub repository. The Probot bot listens for new issues, and the Flask backend processes the issue data to provide bug localization results.
+Ladybug automates **bug localization** by triggering an analysis whenever a new issue is created in your GitHub repository. The Probot bot listens for new issues, and the Flask backend processes the issue data to provide bug localization results.
 
 ---
 
