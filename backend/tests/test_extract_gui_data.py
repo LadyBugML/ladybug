@@ -2,9 +2,10 @@ from services.extract_gui_data import extract_sc_terms
 from services.extract_gui_data import extract_gs_terms
 from services.extract_gui_data import build_corpus
 from services.extract_gui_data import get_boosted_files
+from tests.constants import TEST_EXECUTION_JSON_STRING
 
 def test_extract_SC_terms():
-    json_path = "temp_testing/Execution-1.json"
+    json_string = TEST_EXECUTION_JSON_STRING
 
     expected_sc_terms = [
         "action_bar_root",
@@ -34,12 +35,12 @@ def test_extract_SC_terms():
         "toolbar",
     ]
 
-    extracted_terms = sorted(extract_sc_terms(json_path))
+    extracted_terms = sorted(extract_sc_terms(json_string))
 
     assert extracted_terms == expected_sc_terms, f"Mismatch: {extracted_terms}"
 
 def test_extract_GS_terms():
-    json_path = "temp_testing/Execution-1.json"
+    json_string = TEST_EXECUTION_JSON_STRING
 
     expected_gs_terms = [
         'AddFeedFragment',
@@ -48,7 +49,7 @@ def test_extract_GS_terms():
         'TemplateActivity'
     ]
 
-    extracted_terms = sorted(extract_gs_terms(json_path))
+    extracted_terms = sorted(extract_gs_terms(json_string))
 
     assert extracted_terms == expected_gs_terms, f"Mismatch: {extracted_terms}"
 

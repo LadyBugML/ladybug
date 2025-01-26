@@ -21,6 +21,8 @@ from services.fake_preprocess import Fake_preprocessor
 from database.database import Database
 from services.preprocess_bug_report import preprocess_bug_report
 from services.preprocess_source_code import preprocess_source_code
+from services.extract_gui_data import extract_gs_terms
+from services.extract_gui_data import extract_sc_terms
 from services.filter import filter_files
 from experimental_unixcoder.bug_localization import BugLocalization
 
@@ -136,6 +138,10 @@ def report():
 
     logger.info("Received data from /report request.")
 
+    # Extract Screen Component / GUI Screen Terms for boosting and query expansion
+    sc_terms = extract_sc_terms(trace)
+    gs_terms = extract_gs_terms(trace)
+
     # Extract and validate repository information
     repo_info = extract_and_validate_repo_info(repository)
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -153,7 +159,7 @@ def report():
         abort(500, description="Failed to write issue to file")
 
     try:
-        preprocessed_bug_report = preprocess_bug_report(report_file_path)
+        preprocessed_bug_report = preprocess_bug_report(report_file_path, sc_terms)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "🔍 **Bug Report Preprocessed**: Bug report has been successfully preprocessed.")
     except Exception as e:
@@ -200,7 +206,7 @@ def report():
         # Get the repo document for the query     
         repo_collection = db.get_repo_collection()
         query_repo = repo_collection.find_one(query)
-        repo_files = db.get_repo_file_contents(query_repo["_id"])
+        repo_files = db.get_repo_file_contents(query_repo["_id"])     
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "📚 **Source Code Files Fetched**: Retrieved all source code files from the database.")
     except Exception as e:
