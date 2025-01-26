@@ -5,6 +5,7 @@
 
 import {sendRepo} from './components/sendRepo.js';
 import {sendRatings} from './components/sendRatings.js';
+import { sendTrace } from './components/sendTrace.js';
 import axios from "axios";
 import express from "express";
 // At the top of your file, initialize the map
@@ -129,12 +130,10 @@ export default (app, {getRouter}) => {
     }
 });
 
-
-
     app.on('issues.opened', async (context) => {
         const issue = context.payload.issue;
         const repository = context.payload.repository;
-         const installationId = context.payload.installation.id;
+        const installationId = context.payload.installation.id;
 
         console.log(`Issue #${issue.number} opened in repository ${repository.full_name}`);
 
@@ -184,12 +183,19 @@ export default (app, {getRouter}) => {
             // Store the comment ID
             const comment_id = initialComment.data.id;
 
-
+            // Get the attachment JSON data
+            const trace = await sendTrace(issue.body, context);
+            if(!trace){
+                console.error(`sendTrace returned null for ${issue.number}.`);
+            }
+         
             const fullData = {
                 issue: issueBody,
                 repository: repoData,
+                trace: trace,
                 comment_id
             };
+
             try {
                 const flaskResponse = await axios.post('http://localhost:5000/report', fullData, {
                     headers: {

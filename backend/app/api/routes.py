@@ -125,6 +125,7 @@ def report():
 
     repository = data.get('repository')
     issue = data.get('issue')
+    trace = data.get('trace')
     comment_id = data.get('comment_id')
     if comment_id is None:
         comment_id = -1

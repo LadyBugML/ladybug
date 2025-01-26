@@ -65,7 +65,7 @@ export const sendRatings = async (ratings, context) => {
  * @param {number} issueNumber - The issue number to reply to.
  * @param {string} errorMessage - The error message to include in the comment.
  */
-const replyWithError = async (context, issueNumber, errorMessage) => {
+export const replyWithError = async (context, issueNumber, errorMessage) => {
   const commentBody = `Hello! Unfortunately, ${errorMessage} Please try again later or contact support if the issue persists.`;
 
   const issueComment = context.issue({ body: commentBody, issue_number: issueNumber });
