@@ -94,6 +94,26 @@ class Database:
 
         return embeddings
     
+    def get_corpus_files_embeddings(self, repo_id, corpus: list[str]):
+        """
+        Retrieves the embeddings for the specified files in a repository.
+        
+        :param repo_id: The ID of the repository.
+        :param corpus: A list of file paths whose embeddings need to be fetched.
+        :return: A list of tuples in the format (route, embedding).
+        """
+        embeddings = []
+        
+        # Perform a single query to fetch all matching documents
+        query = {"repo_id": repo_id, "route": {"$in": corpus}}
+        results = self.__embeddings.find(query, {"route": 1, "embedding": 1})
+
+        # Convert results into a dictionary for fast lookup
+        embeddings_dict = {doc["route"]: doc["embedding"] for doc in results}
+
+        # Preserve order and return as tuples
+        return [(route, embeddings_dict.get(route)) for route in corpus]
+
     def get_repo_file_contents(self, repo_id):
         """
         Gets all source code file contents from a specific repository in the 'files' collection
