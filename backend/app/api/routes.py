@@ -440,19 +440,19 @@ def process_and_patch_embeddings(changed_files, repo_info):
     repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
 
     # Add updating to the files db here
-    repo_id = repo_info['_id']
+    repo_id = db.get_repo_collection().find_one({'repo_name': repo_info['repo_name'], 'owner': repo_info['owner']})['_id']
 
     for change_type, files in changed_files.items():
         for file in files:
             route = str(file)
-            print(route)
+            route = os.path.join(repo_dir, route)
 
             if change_type == 'removed':
-                db.get_files_collection.delete_one(
+                db.get_files_collection().delete_one(
                     {'repo_id': repo_id, 'route': route}
                 )
 
-            elif change_type == ('added' or 'modified'):
+            else:
                 try:
                     # Read file in binary mode to detect encoding
                     with open(route, "rb") as file:  # Open file in binary mode
@@ -488,9 +488,6 @@ def process_and_patch_embeddings(changed_files, repo_info):
                     upsert=True
                 )
                 logger.info(f"Stored embedding for file: {route}")
-
-            else:
-                print("file not in db")
 
 
     # Preprocess the changed source code files
