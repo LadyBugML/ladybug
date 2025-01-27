@@ -24,6 +24,7 @@ from services.preprocess_source_code import preprocess_source_code
 from services.extract_gui_data import extract_gs_terms
 from services.extract_gui_data import extract_sc_terms
 from services.extract_gui_data import build_corpus
+from services.extract_gui_data import get_boosted_files
 from services.filter import filter_files
 from experimental_unixcoder.bug_localization import BugLocalization
 
@@ -159,6 +160,7 @@ def report():
                               f"❌ **Report Writing Failed**: {e}")
         abort(500, description="Failed to write issue to file")
 
+    # Preprocess bug report
     try:
         preprocessed_bug_report = preprocess_bug_report(report_file_path, sc_terms)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -178,7 +180,8 @@ def report():
         return jsonify({"message": "Failed because no stored commit SHA"}), 500
 
     logger.info(f"Stored commit SHA: {stored_commit_sha}")
-    # Check if embeddings are up to date
+
+    # Check if embeddings and code file contents are up to date
     if stored_commit_sha == repo_info['latest_commit_sha']:
         logger.info('Embeddings are up to date.')
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -198,6 +201,7 @@ def report():
             send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                                   f"❌ **Embeddings Update Failed**: {e}")
             abort(500, description=str(e))
+        
     # Fetch all source code files from DB
     try:
         query = {
@@ -216,6 +220,7 @@ def report():
                               "❌ **Source Code Retrieval Failed**: Could not fetch source code from the database.")
         return jsonify({"message": "Failed to find repo."}), 405
 
+    # Apply filtering and get boosted files
     corpus = build_corpus(repo_files, sc_terms)
     boosted_files = get_boosted_files(repo_files, gs_terms)
 
@@ -228,7 +233,6 @@ def report():
         repo_collection = db.get_repo_collection()
         query_repo = repo_collection.find_one(query)
         repo_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
-        logger.info(repo_embeddings)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "📚 **Embeddings Fetched**: Retrieved all embeddings from the database.")
     except Exception as e:
@@ -237,8 +241,10 @@ def report():
                               "❌ **Embeddings Retrieval Failed**: Could not fetch embeddings from the database.")
         return jsonify({"message": "Failed to find repo."}), 405
 
+    # Localize bug
     bug_localizer = BugLocalization()
 
+    # Apply boosting and create rankings
     ranked_files = bug_localizer.rank_files(preprocessed_bug_report, repo_embeddings)
     reranked_files = reorder_rankings(ranked_files, boosted_files)
 
@@ -247,6 +253,7 @@ def report():
     for i in range(min(10, len(reranked_files))):
         ranked_list.append(reranked_files[i])
 
+    # Return rankings to GitHub
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                           "🎯 **Bug Localization Completed**: Ranked relevant files identified.")
     return jsonify({"message": "Report processed successfully", "ranked_files": reranked_files}), 200
