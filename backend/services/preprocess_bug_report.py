@@ -30,7 +30,7 @@ def preprocess_bug_report(bug_report_path: str, sc_terms: list[str]):
 
     # Expand query with SC Terms
     for sc_term in sc_terms:
-        bug_report_string += sc_term
+        bug_report_string += " " + sc_term
 
     # Run bug report through preprocessor
     preprocessed_bug_report = preprocessor.preprocess_text(bug_report_string, stop_words_path)
