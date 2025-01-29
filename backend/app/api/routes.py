@@ -232,7 +232,7 @@ def report():
         }
         repo_collection = db.get_repo_collection()
         query_repo = repo_collection.find_one(query)
-        repo_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
+        corpus_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                               "📚 **Embeddings Fetched**: Retrieved all embeddings from the database.")
     except Exception as e:
@@ -245,7 +245,7 @@ def report():
     bug_localizer = BugLocalization()
 
     # Apply boosting and create rankings
-    ranked_files = bug_localizer.rank_files(preprocessed_bug_report, repo_embeddings)
+    ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
     reranked_files = reorder_rankings(ranked_files, boosted_files)
 
     ranked_list = []
