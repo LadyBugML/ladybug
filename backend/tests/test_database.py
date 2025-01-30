@@ -39,12 +39,12 @@ def mock_database():
 
 def test_get_corpus_files_embeddings(mock_database):
     repo_id = "12345"
-    corpus = ["path/to/file1.java", "to/file5.java", "to/file5.java"] 
+    corpus = ["path/to/file1.java", "to/file5.java", "file10.java"] 
 
     expected_output = [
         ("path/to/file1.java", [0.1, 0.2, 0.3]),
         ("to/file5.java", [0.7, 0.8, 0.9]),
-        ("to/file5.java", [0.7, 0.8, 0.9]),  
+        ("file10.java", [0.7, 0.8, 0.9]),  
     ]
 
     result = mock_database.get_corpus_files_embeddings(repo_id, corpus)
