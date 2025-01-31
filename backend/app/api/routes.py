@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 message_queue = queue.Queue()
 
 load_dotenv()
-NODE_URL = os.environ.get("NODE_URL")
+NODE_URL = os.environ.get("NODE_URL") or "http://localhost:3000"
 print("NODE_URL: ", NODE_URL)
 
 # ======================================================================================================================

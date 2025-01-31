@@ -10,7 +10,7 @@ import axios from "axios";
 import express from "express";
 import dotenv from "dotenv";
 // At the top of your file, initialize the map
-let API_URL = process.env.API_URL;
+let API_URL = process.env.API_URL || "http://localhost:5000";
 console.log("API_URL", API_URL);
 
 export default (app, {getRouter}) => {
