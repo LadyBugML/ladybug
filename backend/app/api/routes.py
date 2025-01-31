@@ -16,6 +16,8 @@ from flask import Blueprint, abort, request, jsonify
 from git import Repo, GitCommandError
 from datetime import datetime
 from stat import S_IWUSR, S_IREAD
+from dotenv import load_dotenv
+
 
 from services.fake_preprocess import Fake_preprocessor
 from database.database import Database
@@ -40,6 +42,9 @@ logger = logging.getLogger(__name__)
 # Initialize a thread-safe queue for messages
 message_queue = queue.Queue()
 
+load_dotenv()
+NODE_URL = os.environ.get("NODE_URL") or "http://localhost:3000"
+print("NODE_URL: ", NODE_URL)
 
 # ======================================================================================================================
 # Routes
@@ -309,7 +314,7 @@ def actual_send_update_to_probot(owner, repo, comment_id, message):
         'message': message
     }
     try:
-        response = requests.post('http://localhost:3000/post-message', json=payload)
+        response = requests.post(f'{NODE_URL}/post-message', json=payload)
         response.raise_for_status()  # Raises stored HTTPError, if one occurred.
 
         logger.info(f"Successfully posted message to {owner}/{repo} Issue #{comment_id}: {message}")
