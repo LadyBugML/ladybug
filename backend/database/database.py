@@ -21,7 +21,7 @@ class Database:
             cls._instance.__client = None
         return cls._instance
     
-    def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings'):
+    def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings', files_collection='files'):
         # Set up basic logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ class Database:
         self.__database = self.__client[database]
         self.__repos = self.__database[repo_collection]
         self.__embeddings = self.__database[embeddings_collection]
+        self.__files = self.__database[files_collection]
 
     def __initialize_database_client(self, password):
         if self.__client is not None:
@@ -71,6 +72,14 @@ class Database:
         """
         return self.__embeddings
     
+    def get_files_collection(self):
+        """
+        Gets the reference to the files collection on MongoDB.
+
+        :return: The embeddings collection.
+        """
+        return self.__files
+    
     def get_repo_files_embeddings(self, repo_id):
         """
         Gets the embeddings for all the files in a repo.
@@ -84,6 +93,47 @@ class Database:
             embeddings.append((document.get("route"), document.get("embedding")))
 
         return embeddings
+    
+    def get_corpus_files_embeddings(self, repo_id, corpus: list[str]):
+        """
+        Retrieves the embeddings for the specified files in a repository.
+        
+        :param repo_id: The ID of the repository.
+        :param corpus: A list of file paths whose embeddings need to be fetched.
+        :return: A list of tuples in the format (route, embedding).
+        """
+        embeddings = []
+        
+        # Perform a single query to fetch all matching documents
+        query = {"repo_id": repo_id, "route": {"$in": corpus}}
+        results = self.__embeddings.find(query, {"route": 1, "embedding": 1})
+
+        # Convert results into a dictionary for fast lookup
+        embeddings_dict = {doc["route"]: doc["embedding"] for doc in results}
+
+        # Preserve order and return as tuples
+        return [(route, embeddings_dict.get(route)) for route in corpus]
+
+    def get_repo_file_contents(self, repo_id):
+        """
+        Gets all source code file contents from a specific repository in the 'files' collection
+
+        Args: 
+            repo_id of desired repository
+
+        Returns:
+            A list of tuples with the (file_path, file_name, file_contents)
+        """
+
+        files = []
+        results = self.__files.find({"repo_id": repo_id})
+
+        for document in results:
+            file_path = document.get("route")
+            file_name = os.path.basename(file_path)
+            files.append((file_path, file_name, document.get("code content")))
+
+        return files
     
     def insert_embeddings_document(self, embeddings_document, **kwargs):
         self.logger.debug("Storing embeddings in database.")
