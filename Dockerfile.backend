@@ -5,10 +5,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN apt-get -y update
 RUN apt-get -y install git
-# RUN python
-# RUN import nltk
-# RUN nltk.download()
-# RUN exit()
+RUN python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng'); nltk.download('wordnet')"
 COPY backend/ .
 EXPOSE 5000
 CMD [ "python", "index.py" ]

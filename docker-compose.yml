@@ -9,6 +9,8 @@ services:
       - "5000:5000"
     env_file:
       - backend/.env
+    environment:
+      - NODE_URL=http://probot:3000
 
   probot:
     build:
