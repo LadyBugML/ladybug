@@ -287,12 +287,9 @@ def message_worker():
                     logger.info(f"Message sent to Probot: {message}")
                 else:
                     logger.error(f"Failed to send message to Probot: {message}")
-            # Wait for 5 seconds before sending the next message
-            time.sleep(2)
+
         except Exception as e:
             logger.error(f"Error in message_worker: {e}")
-            # Optional: Add a short sleep to prevent tight loop in case of continuous errors
-            time.sleep(5)
 
 
 def actual_send_update_to_probot(owner, repo, comment_id, message):
