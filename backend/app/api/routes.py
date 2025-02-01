@@ -221,7 +221,7 @@ def report():
         return jsonify({"message": "Failed to find repo."}), 405
 
     # Apply filtering and get boosted files
-    corpus = build_corpus(repo_files, sc_terms)
+    corpus = build_corpus(repo_files, sc_terms, repo_info)
     boosted_files = get_boosted_files(repo_files, gs_terms)
 
     # FETCH ALL EMBEDDINGS FROM DB
