@@ -1,5 +1,6 @@
 import json
 import re
+import os
 
 def extract_sc_terms(json_string: str):
     """
@@ -88,7 +89,7 @@ def check_if_sc_term_exists(search_terms, file_content):
 
     return is_matched_keyword
 
-def build_corpus(source_code_files: list[tuple], sc_terms: list[str]):
+def build_corpus(source_code_files: list[tuple], sc_terms: list[str], repo_info):
     """
     Maps SC terms to files using a brute force approach.
 
@@ -98,13 +99,15 @@ def build_corpus(source_code_files: list[tuple], sc_terms: list[str]):
     Returns: 
         sc_files (list[str]): A list of strings with each string being the file path of a mapped SC file
     """
+    repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
+
     sc_files = []
 
     for file in source_code_files:
         search_term_exist = check_if_sc_term_exists(sc_terms, file[2])
 
         if search_term_exist == True:
-            sc_files.append(file[0])
+            sc_files.append(file[0].replace(repo_dir + '/', ''))
 
     return sc_files
 

@@ -229,7 +229,7 @@ def report():
         return jsonify({"message": "Failed to find repo."}), 405
 
     # Apply filtering and get boosted files
-    corpus = build_corpus(repo_files, sc_terms)
+    corpus = build_corpus(repo_files, sc_terms, repo_info)
     boosted_files = get_boosted_files(repo_files, gs_terms)
 
     # FETCH ALL EMBEDDINGS FROM DB
@@ -256,15 +256,16 @@ def report():
     ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
     reranked_files = reorder_rankings(ranked_files, boosted_files)
 
-    ranked_list = []
+    top_ten_files = []
 
+    # Only return top ten files
     for i in range(min(10, len(reranked_files))):
-        ranked_list.append(reranked_files[i])
+        top_ten_files.append(reranked_files[i])
 
     # Return rankings to GitHub
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
                           "🎯 **Bug Localization Completed**: Ranked relevant files identified.")
-    return jsonify({"message": "Report processed successfully", "ranked_files": reranked_files}), 200
+    return jsonify({"message": "Report processed successfully", "ranked_files": top_ten_files}), 200
 
 
 # ======================================================================================================================

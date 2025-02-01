@@ -105,14 +105,13 @@ class Database:
         embeddings = []
         
         # Perform a single query to fetch all matching documents
-        query = {"repo_id": repo_id, "route": {"$in": corpus}}
-        results = self.__embeddings.find(query, {"route": 1, "embedding": 1})
+        results = self.__embeddings.find({"repo_id": repo_id, "route": {"$in": corpus}})
 
-        # Convert results into a dictionary for fast lookup
-        embeddings_dict = {doc["route"]: doc["embedding"] for doc in results}
+        for document in results:
+            embeddings.append((document.get("route"), document.get("embedding")))
 
         # Preserve order and return as tuples
-        return [(route, embeddings_dict.get(route)) for route in corpus]
+        return embeddings
 
     def get_repo_file_contents(self, repo_id):
         """
