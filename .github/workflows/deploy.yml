@@ -1,0 +1,29 @@
+name: Deploy Ladybug to Linode
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.LINODE_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Linode
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.LINODE_IP }} << 'EOF'
+          cd /home/sage-student/ladybug/ladybug
+          git pull origin main
+          # docker-compose up --build -d
+          EOF
