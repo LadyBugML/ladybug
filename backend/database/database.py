@@ -30,8 +30,6 @@ class Database:
 
         # Load environment variables
         password = os.environ.get("MONGOPASSWORD")
-        if not password:
-            raise ValueError("MongoDB password not found in environment variables.")
 
         self.__initialize_database_client(password)
         self.__database = self.__client[database]
