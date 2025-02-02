@@ -16,6 +16,8 @@ from flask import Blueprint, abort, request, jsonify
 from git import Repo, GitCommandError
 from datetime import datetime
 from stat import S_IWUSR, S_IREAD
+from dotenv import load_dotenv
+
 
 from services.fake_preprocess import Fake_preprocessor
 from database.database import Database
@@ -40,10 +42,16 @@ logger = logging.getLogger(__name__)
 # Initialize a thread-safe queue for messages
 message_queue = queue.Queue()
 
+load_dotenv()
+NODE_URL = os.environ.get("NODE_URL") or "http://localhost:3000"
+print("NODE_URL: ", NODE_URL)
 
 # ======================================================================================================================
 # Routes
 # ======================================================================================================================
+@routes.route('/')
+def index():
+    return "Hello, World!"
 
 @routes.route("/initialization", methods=["POST"])
 def initialization():
@@ -279,12 +287,9 @@ def message_worker():
                     logger.info(f"Message sent to Probot: {message}")
                 else:
                     logger.error(f"Failed to send message to Probot: {message}")
-            # Wait for 5 seconds before sending the next message
-            time.sleep(2)
+
         except Exception as e:
             logger.error(f"Error in message_worker: {e}")
-            # Optional: Add a short sleep to prevent tight loop in case of continuous errors
-            time.sleep(5)
 
 
 def actual_send_update_to_probot(owner, repo, comment_id, message):
@@ -307,7 +312,7 @@ def actual_send_update_to_probot(owner, repo, comment_id, message):
         'message': message
     }
     try:
-        response = requests.post('http://localhost:3000/post-message', json=payload)
+        response = requests.post(f'{NODE_URL}/post-message', json=payload)
         response.raise_for_status()  # Raises stored HTTPError, if one occurred.
 
         logger.info(f"Successfully posted message to {owner}/{repo} Issue #{comment_id}: {message}")
@@ -760,15 +765,9 @@ def retrieve_stored_sha(owner, repo_name):
     """
     logger.debug(f"Retrieving stored SHA for {owner}/{repo_name}.")
     try:
-        if db.USE_DATABASE:
-            stored_commit_sha = retrieve_sha_from_db(owner, repo_name)
-        else:
-            stored_commit_sha = get_latest_sha_from_file_database(owner, repo_name)
+        stored_commit_sha = retrieve_sha_from_db(owner, repo_name)
     except Exception:
-        if db.USE_DATABASE:
             abort(500, description="Failed to retrieve commit SHA from database.")
-        else:
-            abort(500, description="Failed to retrieve commit SHA from file.")
 
     if stored_commit_sha:
         logger.debug(f"Stored commit SHA: {stored_commit_sha}")
@@ -825,83 +824,6 @@ def reorder_rankings(ranked_files: list[tuple], gs_files: list[str]):
 
     return gs_ranked + non_gs_ranked
 
-
-# ======================================================================================================================
-# Local Database (File) Methods
-# ======================================================================================================================
-
-def get_latest_sha_from_file_database(owner, repo_name):
-    """
-    Retrieves the latest commit SHA for the specified repository from the local embeddings_records.txt file.
-
-    :param owner: The repository owner's username.
-    :param repo_name: The repository name.
-    :return: The latest commit SHA or None if not found.
-    """
-    logger.debug(f"Fetching latest SHA for {owner}/{repo_name} from file.")
-
-    filename = 'embeddings_records.txt'
-    if not os.path.exists(filename):
-        logger.info(f"Embeddings records file {filename} does not exist.")
-        return None
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-            for line in reversed(lines):  # Start from the end for the latest entry
-                try:
-                    record = json.loads(line)
-                    if (record['owner'] == owner and
-                            record['repo_name'] == repo_name):
-                        logger.debug(f"Found matching record: {record}")
-                        return record.get('commit_sha')
-                except json.JSONDecodeError:
-                    logger.warning("Encountered invalid JSON record in embeddings_records.txt.")
-                    continue
-    except Exception as e:
-        logger.error(f"Error reading embeddings records file: {e}")
-    return None
-
-
-def store_embeddings_in_file_database(embeddings_document):
-    """
-    Stores the embeddings document in the local embeddings_records.txt file.
-    Overwrites existing embeddings for the repository to ensure a fresh update.
-
-    :param embeddings_document: The embeddings data to store.
-    :raises: Exception if writing to the file fails.
-    """
-    logger.debug("Storing embeddings in local file.")
-
-    filename = 'embeddings_records.txt'
-    try:
-        # Read existing records
-        records = {}
-        if os.path.exists(filename):
-            with open(filename, 'r', encoding='utf-8') as file:
-                for line in file:
-                    try:
-                        record = json.loads(line)
-                        key = (record['owner'], record['repo_name'])
-                        records[key] = record
-                    except json.JSONDecodeError:
-                        logger.warning("Encountered invalid JSON record in embeddings_records.txt.")
-                        continue
-
-        # Update the record for the current repository
-        key = (embeddings_document['owner'], embeddings_document['repo_name'])
-        records[key] = embeddings_document
-
-        # Write all records back to the file
-        with open(filename, 'w', encoding='utf-8') as file:
-            for record in records.values():
-                json_record = json.dumps(record)
-                file.write(json_record + '\n')
-
-        logger.info('Embeddings stored in text file successfully.')
-    except Exception as e:
-        logger.error(f"Failed to write to embeddings records file: {e}")
-        raise
-
 def insert_to_code_db(route, repo_id):
     try:
         # Read file in binary mode to detect encoding
@@ -910,12 +832,12 @@ def insert_to_code_db(route, repo_id):
             result = chardet.detect(raw_data)
             encoding = result['encoding']
             print(f"Detected encoding for {route}: {encoding}")
-        
+
         # Now open the file using the detected encoding
         with open(route, "r", encoding=encoding) as file:
             code_content = file.read()
             print("Code content successfully read.")
-    
+
     except FileNotFoundError:
         logger.info(f"Error: The file at {route} was not found.")
     except IOError as e:

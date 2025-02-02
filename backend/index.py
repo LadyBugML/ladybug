@@ -18,10 +18,7 @@ def create_app(test_config=None):
     # Initializes the client
     db = Database()
 
-    # Configuration Flag: Add USE_DATABASE="False" to your .env to use local file database
-    db.USE_DATABASE = os.environ.get("USE_DATABASE", "True").lower() == "true"
-
-    # Initialize logging
+     # Initialize logging
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
@@ -37,4 +34,4 @@ def create_app(test_config=None):
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)

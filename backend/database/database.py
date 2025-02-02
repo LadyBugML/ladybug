@@ -4,6 +4,8 @@ import json
 import torch
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+from dotenv import load_dotenv
+load_dotenv()
 
 class Database:
     """
@@ -14,13 +16,13 @@ class Database:
     :param embeddings_collection: The embeddings collection name. Defaults to `'embeddings'`.
     """
     _instance = None  # Class-level instance variable for the singleton pattern
-    
+
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(Database, cls).__new__(cls, *args, **kwargs)
             cls._instance.__client = None
         return cls._instance
-    
+
     def __init__(self, database='test', repo_collection='repos', embeddings_collection='embeddings', files_collection='files'):
         # Set up basic logging
         logging.basicConfig(level=logging.INFO)
@@ -29,8 +31,6 @@ class Database:
         # Load environment variables
         password = os.environ.get("MONGOPASSWORD")
 
-        # Initialize client (or use local files if a connection to MongoDB can't be made)
-        self.USE_DATABASE = False
         self.__initialize_database_client(password)
         self.__database = self.__client[database]
         self.__repos = self.__database[repo_collection]
@@ -40,22 +40,18 @@ class Database:
     def __initialize_database_client(self, password):
         if self.__client is not None:
             return
-        
-        client = None
+
         connection_string = (
-                f"mongodb+srv://samarkaranch:{password}@cluster0.269ml.mongodb.net/"
-                "?retryWrites=true&w=majority&appName=Cluster0"
-            )
-        
+            f"mongodb+srv://samarkaranch:{password}@cluster0.269ml.mongodb.net/"
+            "?retryWrites=true&w=majority&appName=Cluster0"
+        )
+
         try:
-            client = MongoClient(connection_string)
+            self.__client = MongoClient(connection_string)
             self.logger.info("Connected to MongoDB successfully.")
-            self.USE_DATABASE = True
         except ConnectionFailure as e:
             self.logger.error(f"Could not connect to MongoDB: {e}")
-        
-        self.__client = client
-    
+
     def get_repo_collection(self):
         """
         Gets the reference to the repository collection on MongoDB.
@@ -63,7 +59,7 @@ class Database:
         :return: The repository collection.
         """
         return self.__repos
-    
+
     def get_embeddings_collection(self):
         """
         Gets the reference to the embeddings collection on MongoDB.
@@ -71,7 +67,7 @@ class Database:
         :return: The embeddings collection.
         """
         return self.__embeddings
-    
+
     def get_files_collection(self):
         """
         Gets the reference to the files collection on MongoDB.
@@ -79,7 +75,7 @@ class Database:
         :return: The embeddings collection.
         """
         return self.__files
-    
+
     def get_repo_files_embeddings(self, repo_id):
         """
         Gets the embeddings for all the files in a repo.
@@ -93,7 +89,7 @@ class Database:
             embeddings.append((document.get("route"), document.get("embedding")))
 
         return embeddings
-    
+
     def get_corpus_files_embeddings(self, repo_id, corpus: list[str]):
         """
         Retrieves the embeddings for the specified files in a repository.
@@ -133,14 +129,9 @@ class Database:
             files.append((file_path, file_name, document.get("code content")))
 
         return files
-    
+
     def insert_embeddings_document(self, embeddings_document, **kwargs):
         self.logger.debug("Storing embeddings in database.")
-
-        if not self.USE_DATABASE:
-            self.insert_embeddings_localdb(embeddings_document, kwargs)
-            return
-
         self.__embeddings.update_one(
             {'repo_name': embeddings_document['repo_name'], 'owner': embeddings_document['owner']},
             {'$set': embeddings_document},
@@ -149,78 +140,12 @@ class Database:
 
     def retrive_repo_commit_sha(self, owner, repo_name, **kwargs):
         self.logger.debug(f"Retrieving stored SHA for {owner}/{repo_name}.")
-
-        if not self.USE_DATABASE:
-            return self.retrive_repo_commit_sha_localdb(owner, repo_name)
-        
         existing_embedding = self.__embeddings.find_one(
             {'repo_name': repo_name, 'owner': owner},
             kwargs,
             sort=[('stored_at', -1)]
         )
-
-        stored_commit_sha = None
-        if existing_embedding:
-            stored_commit_sha = existing_embedding.get('commit_sha')
-        
-        return stored_commit_sha
-    
-    def retrive_repo_commit_sha_localdb(self, owner, repo_name):
-        self.logger.debug("Using local filesystem...")
-        filename = 'embeddings_records.txt'
-
-        if not os.path.exists(filename):
-            self.logger.debug(f"Embeddings records file {filename} does not exist.")
-            return None
-        try:
-            with open(filename, 'r', encoding='utf-8') as file:
-                lines = file.readlines()
-                for line in reversed(lines):  # Start from the end for the latest entry
-                    try:
-                        record = json.loads(line)
-                        if (record['owner'] == owner and
-                                record['repo_name'] == repo_name):
-                            self.logger.debug(f"Found matching record: {record}")
-                            return record.get('commit_sha')
-                    except json.JSONDecodeError:
-                        self.logger.warning("Encountered invalid JSON record in embeddings_records.txt.")
-                        continue
-        except Exception as e:
-            self.logger.error(f"Error reading embeddings records file: {e}")
-        return None
-    
-    def insert_embeddings_localdb(self, embeddings_document):
-        self.logger.debug("Using local filesystem...")
-
-        filename = 'embeddings_records.txt'
-        try:
-            # Read existing records
-            records = {}
-            if os.path.exists(filename):
-                with open(filename, 'r', encoding='utf-8') as file:
-                    for line in file:
-                        try:
-                            record = json.loads(line)
-                            key = (record['owner'], record['repo_name'])
-                            records[key] = record
-                        except json.JSONDecodeError:
-                            self.logger.warning("Encountered invalid JSON record in embeddings_records.txt.")
-                            continue
-
-            # Update the record for the current repository
-            key = (embeddings_document['owner'], embeddings_document['repo_name'])
-            records[key] = embeddings_document
-
-            # Write all records back to the file
-            with open(filename, 'w', encoding='utf-8') as file:
-                for record in records.values():
-                    json_record = json.dumps(record)
-                    file.write(json_record + '\n')
-
-            self.logger.info('Embeddings stored in text file successfully.')
-        except Exception as e:
-            self.logger.error(f"Failed to write to embeddings records file: {e}")
-            raise
+        return existing_embedding.get('commit_sha') if existing_embedding else None
 
     def insert_embeddings(self, owner: str, repo_name: str, commit_sha: str,
                           preprocessed_repository_files: list[tuple[str, str, list[torch.Tensor]]]):
@@ -238,9 +163,6 @@ class Database:
         """
         self.logger.debug("Storing repository embeddings in database.")
 
-        if not self.USE_DATABASE:
-            return
-        
         filenames = []
         file_embeddings = []
         for filepath, _, embeddings in preprocessed_repository_files:

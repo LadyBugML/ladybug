@@ -8,9 +8,10 @@ import {sendRatings} from './components/sendRatings.js';
 import { sendTrace } from './components/sendTrace.js';
 import axios from "axios";
 import express from "express";
+import dotenv from "dotenv";
 // At the top of your file, initialize the map
-
-
+let API_URL = process.env.API_URL || "http://localhost:5000";
+console.log("API_URL", API_URL);
 
 export default (app, {getRouter}) => {
     const router = getRouter("/");
@@ -105,7 +106,7 @@ export default (app, {getRouter}) => {
             };
 
             try {
-                const flaskResponse = await axios.post('http://localhost:5000/initialization', data, {
+                const flaskResponse = await axios.post(`${API_URL}/initialization`, data, {
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -197,7 +198,7 @@ export default (app, {getRouter}) => {
             };
 
             try {
-                const flaskResponse = await axios.post('http://localhost:5000/report', fullData, {
+                const flaskResponse = await axios.post(`${API_URL}/report`, fullData, {
                     headers: {
                         'Content-Type': 'application/json',
                     },
