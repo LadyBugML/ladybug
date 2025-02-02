@@ -15,9 +15,6 @@ def create_app(test_config=None):
     app = Flask(__name__)
     app.register_blueprint(routes)
 
-    # Initializes the client
-    db = Database()
-
      # Initialize logging
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
