@@ -1,11 +1,15 @@
-FROM python:3.12-slim
-
+FROM nvidia/cuda:12.0.1-devel-ubuntu22.04
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip git && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
-RUN apt-get -y update
-RUN apt-get -y install git
-RUN python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng'); nltk.download('wordnet')"
+RUN pip install --no-cache-dir -r requirements.txt
+RUN python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng', download_dir='/usr/src/app/nltk_data'); nltk.download('wordnet', download_dir='/usr/src/app/nltk_data')"
+ENV NLTK_DATA="/usr/src/app/nltk_data"
 COPY backend/ .
 EXPOSE 5000
-CMD [ "python", "index.py" ]
+CMD ["python", "index.py"]
