@@ -349,54 +349,69 @@ def partial_clone(old_sha, repo_info):
     """
     repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
     new_sha = repo_info['latest_commit_sha']
-    changed_files = get_changed_files(repo_info, old_sha, new_sha, repo_dir)
+
+    github_diff_data = get_diff_from_github(repo_info, old_sha, new_sha)
+    changed_files = create_changed_files_dict(github_diff_data, repo_dir)
+
     zip_archive = get_zip_archive(repo_info)
 
     extract_files(changed_files, zip_archive, repo_dir)
 
     return changed_files
 
-
-def get_changed_files(repo_info, old_sha, new_sha, repo_dir):
+def get_diff_from_github(repo_info, old_sha, new_sha):
     """
-    Gets the diff between two commits and applies filtering.
+    Uses the GitHub API to compare commits between the current version of the repo on the server and the version on GitHub.
 
-    :param old_sha: The current SHA stored in the database
-    :param new_sha: The SHA of the latest commit on GitHub
-    :param repo_info: Dictionary containing repository info
-    :return changed_files: Dictionary of changed files and their change type (added, modified, removed)
+    Parameters:
+        old_sha: The current SHA stored in the database
+        new_sha: The SHA of the latest commit on GitHub
+        repo_info: Dictionary containing repository info
+    
+    Returns:
+        The JSON response from GitHub containing the diff between the two versions
     """
+
     url = f"https://api.github.com/repos/{repo_info['owner']}/{repo_info['repo_name']}/compare/{old_sha}...{new_sha}"
     logger.info(url)
     response = requests.get(url)
 
     if response.status_code == 200:
-        data = response.json()
-
-        # Check if 'files' key is present in response data
-        if 'files' in data:
-            files = data['files']
-
-            # Filter files based on the `.java` extension
-            changed_files = {
-                "added": [f["filename"].replace(repo_dir + '/', '') for f in files if
-                          f["status"] == "added" and f["filename"].endswith(".java")],
-                "modified": [f["filename"].replace(repo_dir + '/', '') for f in files if
-                             f["status"] == "modified" and f["filename"].endswith(".java")],
-                "removed": [f["filename"].replace(repo_dir + '/', '') for f in files if
-                            f["status"] == "removed" and f["filename"].endswith(".java")]
-            }
-
-            logger.info(f"Changed files: {changed_files}")
-
-            return changed_files
-        else:
-            print("Error: 'files' key not found in response data.")
-            return None
+        return response.json()
     else:
-        print(f"Failed to fetch diff from GitHub. Status Code: {response.status_code}")
+        logger.error(f"Failed to fetch diff from GitHub. Status Code: {response.status_code}")
         return None
 
+def create_changed_files_dict(github_diff_data, repo_dir):
+    """
+    Creates a dictionary of changed files based on the GitHub API JSON response.
+
+    Parameters:
+        github_diff_data: A JSON object containing the diff between two repo versions
+
+    Returns:
+        A dictionary mapping change types to project file paths
+    """
+
+    # Check if 'files' key is present in response data
+    if 'files' in github_diff_data:
+        files = github_diff_data['files']
+
+        # Filter files based on the `.java` extension
+        changed_files = {
+            "added": [f["filename"].replace(repo_dir + '/', '') for f in files if
+                        f["status"] == "added" and f["filename"].endswith(".java")],
+            "modified": [f["filename"].replace(repo_dir + '/', '') for f in files if
+                            f["status"] == "modified" and f["filename"].endswith(".java")],
+            "removed": [f["filename"].replace(repo_dir + '/', '') for f in files if
+                        f["status"] == "removed" and f["filename"].endswith(".java")]
+        }
+
+        logger.info(f"Changed files: {changed_files}")
+        return changed_files
+    else:
+        logger.error("Error: 'files' key not found in response data.")
+        return None
 
 def get_zip_archive(repo_info):
     """
