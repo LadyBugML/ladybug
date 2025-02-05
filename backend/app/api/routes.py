@@ -353,7 +353,7 @@ def partial_clone(old_sha, repo_info):
     github_diff_data = get_diff_from_github(repo_info, old_sha, new_sha)
     changed_files = create_changed_files_dict(github_diff_data, repo_dir)
 
-    zip_archive = get_zip_archive(repo_info)
+    zip_archive = get_latest_repo_data_from_github(repo_info)
 
     extract_files(changed_files, zip_archive, repo_dir)
 
@@ -413,20 +413,19 @@ def create_changed_files_dict(github_diff_data, repo_dir):
         logger.error("Error: 'files' key not found in response data.")
         return None
 
-def get_zip_archive(repo_info):
+def get_latest_repo_data_from_github(repo_info):
     """
-    Fetches the zipfile of the repository at the latest commit
+    Gets the latest repo data as a zip file.
 
     :param repo_info: Dictionary containing repository info
     :return zip_archive: The zipfile of the repository at the latest commit
     """
-    # Download repo at the latest commit
+
     url = f"https://api.github.com/repos/{repo_info['owner']}/{repo_info['repo_name']}/zipball/{repo_info['latest_commit_sha']}"
     response = requests.get(url)
 
     if response.status_code == 200:
-        zip_archive = zipfile.ZipFile(io.BytesIO(response.content))
-        return zip_archive
+        return zipfile.ZipFile(io.BytesIO(response.content))
     else:
         print("Failed to download zip archive.")
 
