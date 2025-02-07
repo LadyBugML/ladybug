@@ -46,6 +46,9 @@ load_dotenv()
 NODE_URL = os.environ.get("NODE_URL") or "http://localhost:3000"
 print("NODE_URL: ", NODE_URL)
 
+# GUI Data Flag
+GUI_DATA = False
+
 # ======================================================================================================================
 # Routes
 # ======================================================================================================================
@@ -151,6 +154,9 @@ def report():
     # Extract Screen Component / GUI Screen Terms for boosting and query expansion
     sc_terms = extract_sc_terms(trace)
     gs_terms = extract_gs_terms(trace)
+
+    if sc_terms == None:
+        GUI_DATA = False
 
     # Extract and validate repository information
     repo_info = extract_and_validate_repo_info(repository)
