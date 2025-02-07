@@ -267,7 +267,7 @@ def report():
             top_ten_files.append(ranked_files[i])
         
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "🫠 **Note**: Rankings have beeen calculated _without_ GUI Data. Consider submitting a trace to boost rankings!")
+                              "⚠️ **Note**: Rankings have beeen calculated _without_ GUI Data. Consider submitting a trace to boost rankings!")
 
     # Return rankings to GitHub
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
