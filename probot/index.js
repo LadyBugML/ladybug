@@ -5,7 +5,7 @@
 
 import {sendRepo} from './components/sendRepo.js';
 import {sendRatings} from './components/sendRatings.js';
-import { sendTrace } from './components/sendTrace.js';
+import {sendTrace} from './components/sendTrace.js';
 import axios from "axios";
 import express from "express";
 import dotenv from "dotenv";
@@ -21,115 +21,126 @@ export default (app, {getRouter}) => {
     router.use(express.json());
 
     router.post('/post-message', async (req, res) => {
-    const { owner, repo, comment_id, message } = req.body;
+        const {owner, repo, comment_id, message} = req.body;
 
-    if (!owner || !repo || !comment_id || !message) {
-        return res.status(400).json({ error: 'Missing required fields: owner, repo, comment_id, message' });
-    }
+        if (!owner || !repo || !comment_id || !message) {
+            return res.status(400).json({error: 'Missing required fields: owner, repo, comment_id, message'});
+        }
 
-    const repoKey = `${owner}/${repo}`;
-    const installationId = repoToInstallationMap.get(repoKey);
+        const repoKey = `${owner}/${repo}`;
+        const installationId = repoToInstallationMap.get(repoKey);
 
-    if (!installationId) {
-        return res.status(400).json({ error: `Installation not found for repository ${repoKey}` });
-    }
+        if (!installationId) {
+            return res.status(400).json({error: `Installation not found for repository ${repoKey}`});
+        }
 
-    try {
-        // Authenticate as the installation
-        const octokit = await app.auth(installationId);
-        if(!octokit)
-            res.status(500).json({error: `Failed to initialize octokit`})
+        try {
+            // Authenticate as the installation
+            const octokit = await app.auth(installationId);
+            if (!octokit) {
+                return res.status(500).json({error: `Failed to initialize octokit`});
+            }
 
-        // Post the comment to the specified issue
-        await octokit.issues.updateComment({
-            owner,
-            repo,
-            comment_id,
-            body: message,
-        });
+            // Fetch the existing comment
+            const {data: existingComment} = await octokit.issues.getComment({
+                owner,
+                repo,
+                comment_id,
+            });
 
-        console.log(`Posted message to ${repoKey} Issue #${comment_id}: ${message}`);
-        return res.status(200).json({ status: 'Comment posted successfully' });
-    } catch (error) {
-        console.error('Error posting comment:', error);
-        return res.status(500).json({ error: 'Failed to post comment' });
-    }
-});
+            // Append the new message to the existing comment body
+            const updatedBody = `${existingComment.body}\n${message}`;
+
+            // Update the comment with the concatenated message
+            await octokit.issues.updateComment({
+                owner,
+                repo,
+                comment_id,
+                body: updatedBody,
+            });
+
+            console.log(`Appended message to ${repoKey} Issue #${comment_id}: ${message}`);
+            return res.status(200).json({status: 'Comment updated successfully'});
+        } catch (error) {
+            console.error('Error updating comment:', error);
+            return res.status(500).json({error: 'Failed to update comment'});
+        }
+    });
 
 
     app.on("installation_repositories.added", async (context) => {
-    const { repositories_added } = context.payload;
-    const installationId = context.payload.installation.id;
+        const {repositories_added} = context.payload;
+        const installationId = context.payload.installation.id;
 
-    try {
-        for (const repo of repositories_added) {
-            const [ownerName, repoName] = repo.full_name.split('/');
-            const repoKey = `${ownerName}/${repoName}`;
-            repoToInstallationMap.set(repoKey, installationId);
-            console.log("Current repoToInstallationMap:", Array.from(repoToInstallationMap.entries()));
+        try {
+            for (const repo of repositories_added) {
+                const [ownerName, repoName] = repo.full_name.split('/');
+                const repoKey = `${ownerName}/${repoName}`;
+                repoToInstallationMap.set(repoKey, installationId);
+                console.log("Current repoToInstallationMap:", Array.from(repoToInstallationMap.entries()));
 
-            // Fetch the full repository data
-            const { data: fullRepo } = await context.octokit.repos.get({
-                owner: ownerName,
-                repo: repoName,
-            });
-
-            // Create an initial issue
-            const initIssue = await context.octokit.issues.create({
-                owner: ownerName,
-                repo: repoName,
-                title: 'Welcome to LadyBug! 🐞',
-                body: getInitializationComment(repoName),
-            });
-
-            // Create an initial comment on the issue
-            const initComment = await context.octokit.issues.createComment({
-                owner: ownerName,
-                repo: repoName,
-                issue_number: initIssue.data.number,
-                body: getInitializationComment(repoName),
-            });
-
-            // Store the actual comment ID
-            const comment_id = initComment.data.id;
-
-            // Pass the full repository object and context to sendRepo
-            const repoData = await sendRepo(fullRepo, context);
-            if (!repoData) {
-                console.error(`sendRepo returned null for ${ownerName}/${repoName}. Skipping Axios POST.`);
-                return;
-            }
-
-            const data = {
-                repoData,
-                comment_id
-            };
-
-            try {
-                const flaskResponse = await axios.post(`${API_URL}/initialization`, data, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                // Fetch the full repository data
+                const {data: fullRepo} = await context.octokit.repos.get({
+                    owner: ownerName,
+                    repo: repoName,
                 });
-                if (flaskResponse.status !== 200) {
-                    throw new Error(`Failed to send data to Flask backend: ${flaskResponse.status} ${flaskResponse.statusText}`);
-                }
-                console.log('Repo info sent to Flask backend successfully.');
 
-                await context.octokit.issues.createComment({
+                // Create an initial issue
+                const initIssue = await context.octokit.issues.create({
+                    owner: ownerName,
+                    repo: repoName,
+                    title: 'Welcome to LadyBug! 🐞',
+                    body: getInitializationComment(repoName),
+                });
+
+                // Create an initial comment on the issue
+                const initComment = await context.octokit.issues.createComment({
                     owner: ownerName,
                     repo: repoName,
                     issue_number: initIssue.data.number,
-                    body: getCompletionComment(repoName)
+                    body: getInitializationComment(repoName),
                 });
-            } catch (error) {
-                console.error('Error while sending repo info:', error);
+
+                // Store the actual comment ID
+                const comment_id = initComment.data.id;
+
+                // Pass the full repository object and context to sendRepo
+                const repoData = await sendRepo(fullRepo, context);
+                if (!repoData) {
+                    console.error(`sendRepo returned null for ${ownerName}/${repoName}. Skipping Axios POST.`);
+                    return;
+                }
+
+                const data = {
+                    repoData,
+                    comment_id
+                };
+
+                try {
+                    const flaskResponse = await axios.post(`${API_URL}/initialization`, data, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    if (flaskResponse.status !== 200) {
+                        throw new Error(`Failed to send data to Flask backend: ${flaskResponse.status} ${flaskResponse.statusText}`);
+                    }
+                    console.log('Repo info sent to Flask backend successfully.');
+
+                    await context.octokit.issues.createComment({
+                        owner: ownerName,
+                        repo: repoName,
+                        issue_number: initIssue.data.number,
+                        body: getCompletionComment(repoName)
+                    });
+                } catch (error) {
+                    console.error('Error while sending repo info:', error);
+                }
             }
+        } catch (error) {
+            console.error('Failed to process repositories:', error);
         }
-    } catch (error) {
-        console.error('Failed to process repositories:', error);
-    }
-});
+    });
 
     app.on('issues.opened', async (context) => {
         const issue = context.payload.issue;
@@ -167,7 +178,7 @@ export default (app, {getRouter}) => {
             }
 
             // Create initial comment
-            const initialCommentBody = 'Processing your request... [0%]';
+            const initialCommentBody = 'Let&apos;s analyze your issue \n---\n';
             let initialComment;
             try {
                 initialComment = await context.octokit.issues.createComment({
@@ -186,10 +197,10 @@ export default (app, {getRouter}) => {
 
             // Get the attachment JSON data
             const trace = await sendTrace(issue.body, context);
-            if(!trace){
+            if (!trace) {
                 console.error(`sendTrace returned null for ${issue.number}.`);
             }
-         
+
             const fullData = {
                 issue: issueBody,
                 repository: repoData,
