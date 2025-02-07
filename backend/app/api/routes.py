@@ -46,9 +46,6 @@ load_dotenv()
 NODE_URL = os.environ.get("NODE_URL") or "http://localhost:3000"
 print("NODE_URL: ", NODE_URL)
 
-# GUI Data Flag
-GUI_DATA = False
-
 # ======================================================================================================================
 # Routes
 # ======================================================================================================================
@@ -135,6 +132,8 @@ def report():
     - If SHAs match:
         - Confirms that embeddings are up to date.
     """
+    GUI_DATA = True
+
     data = request.get_json()
     if not data:
         abort(400, description="Invalid JSON data")
@@ -155,7 +154,7 @@ def report():
     sc_terms = extract_sc_terms(trace)
     gs_terms = extract_gs_terms(trace)
 
-    if sc_terms == None:
+    if not gs_terms or not sc_terms:
         GUI_DATA = False
 
     # Extract and validate repository information
@@ -216,57 +215,54 @@ def report():
                                   f"❌ **Embeddings Update Failed**: {e}")
             abort(500, description=str(e))
         
-    # Fetch all source code files from DB
-    try:
-        query = {
-            "repo_name": repo_info['repo_name'],
-            "owner": repo_info['owner']
-        }
-        # Get the repo document for the query     
-        repo_collection = db.get_repo_collection()
-        query_repo = repo_collection.find_one(query)
-        repo_files = db.get_repo_file_contents(query_repo["_id"])     
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "📚 **Source Code Files Fetched**: Retrieved all source code files from the database.")
-    except Exception as e:
-        logger.info('Failed to find repo.')
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "❌ **Source Code Retrieval Failed**: Could not fetch source code from the database.")
-        return jsonify({"message": "Failed to find repo."}), 405
-
-    # Apply filtering and get boosted files
-    corpus = build_corpus(repo_files, sc_terms, repo_info)
-    boosted_files = get_boosted_files(repo_files, gs_terms)
-
-    # FETCH ALL EMBEDDINGS FROM DB
-    try:
-        query = {
-            "repo_name": repo_info['repo_name'],
-            "owner": repo_info['owner']
-        }
-        repo_collection = db.get_repo_collection()
-        query_repo = repo_collection.find_one(query)
-        corpus_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "📚 **Embeddings Fetched**: Retrieved all embeddings from the database.")
-    except Exception as e:
-        logger.info('Failed to find repo.')
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "❌ **Embeddings Retrieval Failed**: Could not fetch embeddings from the database.")
-        return jsonify({"message": "Failed to find repo."}), 405
-
-    # Localize bug
+    # Initialize Bug Localizer and ranked list
     bug_localizer = BugLocalization()
-
-    # Apply boosting and create rankings
-    ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
-    reranked_files = reorder_rankings(ranked_files, boosted_files)
-
     top_ten_files = []
+    
+    # Ranking generation with GUI data
+    if(GUI_DATA):
+        # Fetch all source code files from DB for filtering + boosting with GUI data
+        try:
+            query = {
+                "repo_name": repo_info['repo_name'],
+                "owner": repo_info['owner']
+            }
+            # Get the repo document for the query     
+            repo_collection = db.get_repo_collection()
+            query_repo = repo_collection.find_one(query)
+            repo_files = db.get_repo_file_contents(query_repo["_id"])     
+            send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                                "📚 **Source Code Files Fetched**: Retrieved all source code files from the database.")
+        except Exception as e:
+            logger.info('Failed to find repo.')
+            send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                                "❌ **Source Code Retrieval Failed**: Could not fetch source code from the database.")
+            return jsonify({"message": "Failed to find repo."}), 405
 
-    # Only return top ten files
-    for i in range(min(10, len(reranked_files))):
-        top_ten_files.append(reranked_files[i])
+        # Apply filtering and get boosted files
+        corpus = build_corpus(repo_files, sc_terms, repo_info)
+        boosted_files = get_boosted_files(repo_files, gs_terms)
+
+        # Fetch corpus embeddings from database
+        corpus_embeddings = fetch_corpus_embeddings(repo_info, corpus, comment_id)
+
+        # Apply boosting and create rankings
+        ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
+        reranked_files = reorder_rankings(ranked_files, boosted_files)
+
+        # Only return top ten files
+        for i in range(min(10, len(reranked_files))):
+            top_ten_files.append(reranked_files[i])
+
+    # Ranking generation without GUI data
+    else:
+        # Fetch all embeddings from DB
+        repo_embeddings = fetch_all_embeddings(repo_info, comment_id)
+        ranked_files = bug_localizer.rank_files(preprocessed_bug_report, repo_embeddings)
+
+        # Only return top ten files
+        for i in range(min(10, len(ranked_files))):
+            top_ten_files.append(ranked_files[i])
 
     # Return rankings to GitHub
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -277,6 +273,45 @@ def report():
 # ======================================================================================================================
 # Helper Functions
 # ======================================================================================================================
+
+def fetch_all_embeddings(repo_info, comment_id):
+    try:
+        query = {
+            "repo_name": repo_info['repo_name'],
+            "owner": repo_info['owner']
+        }
+        repo_collection = db.get_repo_collection()
+        query_repo = repo_collection.find_one(query)
+        repo_embeddings = db.get_repo_files_embeddings(query_repo["_id"])
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "📚 **Repository Embeddings Fetched**: Retrieved all repository embeddings from the database.")
+        
+        return repo_embeddings
+    except Exception as e:
+        logger.info('Failed to find repo.')
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "❌ **Repository Embeddings Retrieval Failed**: Could not fetch all repository embeddings from the database.")
+        return jsonify({"message": "Failed to find repo."}), 405
+
+def fetch_corpus_embeddings(repo_info, corpus, comment_id):
+    try:
+        query = {
+            "repo_name": repo_info['repo_name'],
+            "owner": repo_info['owner']
+        }
+        repo_collection = db.get_repo_collection()
+        query_repo = repo_collection.find_one(query)
+        corpus_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "📚 **Corpus Embeddings Fetched**: Retrieved all corpus embeddings from the database.")
+        
+        return corpus_embeddings;
+
+    except Exception as e:
+        logger.info('Failed to find repo.')
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "❌ **Corpus Embeddings Retrieval Failed**: Could not fetch corpus embeddings from the database.")
+        return jsonify({"message": "Failed to find repo."}), 405
 
 def message_worker():
     """
