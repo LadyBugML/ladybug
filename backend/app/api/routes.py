@@ -95,7 +95,7 @@ def initialization():
     try:
         process_and_store_embeddings(repo_info, comment_id)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "🌀 **Cloning Repository**: Repository cloned successfully.")
+                              "✅ **Cloning Repository**: Repository cloned successfully.")
     except Exception as e:
         logger.error(f"Initialization failed: {e}")
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -113,7 +113,7 @@ def initialization():
 
     logger.info('Embeddings stored successfully.')
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                          "🎉 **Initialization Completed**: All embeddings are up to date.")
+                          "✅ **Initialization Completed**: All embeddings are up to date.")
     return jsonify({"message": "Embeddings computed and stored"}), 200
 
 
@@ -168,7 +168,7 @@ def report():
     try:
         report_file_path = write_file_for_report_processing(repo_info['repo_name'], issue)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "📝 **Report Written**: Issue has been written to the report file.")
+                              "✅ **Report Written**: Issue has been written to the report file.")
     except Exception as e:
         logger.error(f"Failed to write issue to file: {e}")
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -179,7 +179,7 @@ def report():
     try:
         preprocessed_bug_report = preprocess_bug_report(report_file_path, sc_terms)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "🔍 **Bug Report Preprocessed**: Bug report has been successfully preprocessed.")
+                              "✅ **Bug Report Preprocessed**: Bug report has been successfully preprocessed.")
     except Exception as e:
         logger.error(f"Failed to preprocess bug report: {e}")
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -204,7 +204,7 @@ def report():
     else:
         logger.info('Embeddings are outdated. Recomputing embeddings.')
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "🔄 **Embeddings Outdated**: Recomputing embeddings due to new commits.")
+                              "✅ **Embeddings Outdated**: Recomputing embeddings due to new commits.")
         try:
             changed_files = partial_clone(stored_commit_sha, repo_info)
             process_and_patch_embeddings(changed_files, repo_info)
@@ -234,7 +234,7 @@ def report():
             query_repo = repo_collection.find_one(query)
             repo_files = db.get_repo_file_contents(query_repo["_id"])     
             send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                                "📚 **Source Code Files Fetched**: Retrieved all source code files from the database.")
+                                "✅ **Source Code Files Fetched**: Retrieved all source code files from the database.")
         except Exception as e:
             logger.info('Failed to find repo.')
             send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
@@ -289,7 +289,7 @@ def fetch_all_embeddings(repo_info, comment_id):
         query_repo = repo_collection.find_one(query)
         repo_embeddings = db.get_repo_files_embeddings(query_repo["_id"])
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "📚 **Repository Embeddings Fetched**: Retrieved all repository embeddings from the database.")
+                              "✅ **Repository Embeddings Fetched**: Retrieved all repository embeddings from the database.")
         
         return repo_embeddings
     except Exception as e:
@@ -308,7 +308,7 @@ def fetch_corpus_embeddings(repo_info, corpus, comment_id):
         query_repo = repo_collection.find_one(query)
         corpus_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
         send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "📚 **Corpus Embeddings Fetched**: Retrieved all corpus embeddings from the database.")
+                              "✅ **Corpus Embeddings Fetched**: Retrieved all corpus embeddings from the database.")
         
         return corpus_embeddings;
 
@@ -606,7 +606,7 @@ def process_and_store_embeddings(repo_info, comment_id):
 
     clone_repo(repo_info['repo_url'], repo_dir)
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], repo_info.get('comment_id'),
-                          "🌀 **Cloning Completed**: Repository cloned successfully.")
+                          "✅ **Cloning Completed**: Repository cloned successfully.")
 
     filtered_files = filter_files(repo_dir)
     for file in filtered_files:
@@ -621,7 +621,7 @@ def process_and_store_embeddings(repo_info, comment_id):
     # Preprocess the source code files
     preprocessed_files = preprocess_source_code(repo_dir)
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                          "📝 **Embeddings Calculated**: Wow that took a while huh.")
+                          "✅ **Embeddings Calculated**: Wow that took a while huh.")
     for file in preprocessed_files:
         logger.info(f"Preprocessed file: {file}")
 
@@ -648,7 +648,7 @@ def process_and_store_embeddings(repo_info, comment_id):
 
     # Store repo and embeddings
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], repo_info.get('comment_id'),
-                          "📚 **Storing Embeddings**: Storing repository information and embeddings in the database.")
+                          "✅ **Storing Embeddings**: Storing repository information and embeddings in the database.")
     send_initialized_data_to_db(repo_document, code_file_documents, filtered_files)
 
 
