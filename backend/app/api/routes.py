@@ -156,6 +156,8 @@ def report():
 
     if not gs_terms or not sc_terms:
         GUI_DATA = False
+        logger.info("No GUI Data Detected")
+
 
     # Extract and validate repository information
     repo_info = extract_and_validate_repo_info(repository)
@@ -263,6 +265,9 @@ def report():
         # Only return top ten files
         for i in range(min(10, len(ranked_files))):
             top_ten_files.append(ranked_files[i])
+        
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "🫠 **Note**: Rankings have beeen calculated _without_ GUI Data. Consider submitting a trace to boost rankings!")
 
     # Return rankings to GitHub
     send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
