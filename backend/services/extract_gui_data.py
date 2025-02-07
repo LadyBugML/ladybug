@@ -90,10 +90,6 @@ def check_if_sc_term_exists(search_terms, file_content):
     Returns:
         is_matched_keyword (bool): True if a search term was found in the file contents, otherwise false.
     """
-    # Return true is there aren't any search terms to begin with
-    if(search_terms == []):
-        return True;
-
     is_matched_keyword = False
     for keyword in search_terms:
         if keyword in file_content:
