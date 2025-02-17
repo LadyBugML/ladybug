@@ -4,12 +4,14 @@ from app.api.routes import extract_files
 from app.api.routes import post_process_cleanup
 from app.api.routes import write_file_for_report_processing
 from app.api.routes import change_repository_file_permissions
+from app.api.routes import extract_and_validate_repo_info
 
 import zipfile
 import os
-import shutil
+import pytest
 from unittest.mock import MagicMock, patch
 from stat import S_IWUSR, S_IREAD
+from werkzeug.exceptions import HTTPException
 
 def test_create_changed_files_dict_with_added_files():
     github_diff_data = {
@@ -293,3 +295,51 @@ def test_change_repository_file_permissions_with_no_subdirs_or_files():
         
         # Ensure chmod was not called for any subdirectories or files
         assert mock_chmod.call_count == 1
+
+def test_extract_and_validate_repo_info_success():
+    data = {
+        'repo_url': 'https://github.com/example/repo.git',
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name',
+        'default_branch': 'main',
+        'latest_commit_sha': 'abc123'
+    }
+
+    expected_repo_info = {
+        'repo_url': 'https://github.com/example/repo.git',
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name',
+        'default_branch': 'main',
+        'latest_commit_sha': 'abc123'
+    }
+
+    with patch('logging.Logger.debug') as mock_logger_debug:
+        result = extract_and_validate_repo_info(data)
+        assert result == expected_repo_info, f"Expected {expected_repo_info}, but got {result}"
+        mock_logger_debug.assert_any_call("Extracting and validating repository information.")
+        mock_logger_debug.assert_any_call(f"Validated repository information: {expected_repo_info}")
+
+def test_extract_and_validate_repo_info_missing_fields():
+    data = {
+        'repo_url': 'https://github.com/example/repo.git',
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name',
+        'default_branch': 'main'
+    }
+
+    with pytest.raises(HTTPException) as exc_info:
+        extract_and_validate_repo_info(data)
+        
+        # Extract the raised exception to verify details
+        assert exc_info.value.code == 400
+        assert exc_info.value.description == "Missing required repository information: latest_commit_sha"
+
+def test_extract_and_validate_repo_info_empty_data():
+    data = {}
+
+    with pytest.raises(HTTPException) as exc_info:
+        extract_and_validate_repo_info(data)
+        
+        # Extract the raised exception to verify details
+        assert exc_info.value.code == 400
+        assert exc_info.value.description == "Missing required repository information: repo_url, owner, repo_name, default_branch, latest_commit_sha"
