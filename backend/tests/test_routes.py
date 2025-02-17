@@ -4,6 +4,9 @@ from app.api.routes import extract_files
 from unittest.mock import MagicMock, patch
 import zipfile
 import os
+from app.api.routes import post_process_cleanup
+import shutil
+from unittest.mock import patch, MagicMock
 
 def test_create_changed_files_dict_with_added_files():
     github_diff_data = {
@@ -171,3 +174,58 @@ def test_extract_files_with_no_files():
     with patch("builtins.open", new_callable=MagicMock) as mock_open:
         extract_files(changed_files, zip_archive, repo_dir)
         mock_open.assert_not_called()
+        
+def test_post_process_cleanup_directory_exists():
+    repo_info = {
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name'
+    }
+    dir_path = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
+
+    with patch('os.path.exists', return_value=True), \
+            patch('os.path.isdir', return_value=True), \
+            patch('shutil.rmtree') as mock_rmtree, \
+            patch('logging.Logger.info') as mock_logger_info:
+        post_process_cleanup(repo_info)
+        mock_rmtree.assert_called_once_with(dir_path)
+        mock_logger_info.assert_called_once_with(f"Directory {dir_path} deleted successfully.")
+
+def test_post_process_cleanup_directory_does_not_exist():
+    repo_info = {
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name'
+    }
+
+    with patch('os.path.exists', return_value=False), \
+            patch('logging.Logger.info') as mock_logger_info:
+        post_process_cleanup(repo_info)
+        mock_logger_info.assert_not_called()
+
+def test_post_process_cleanup_not_a_directory():
+    repo_info = {
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name'
+    }
+    dir_path = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
+
+    with patch('os.path.exists', return_value=True), \
+            patch('os.path.isdir', return_value=False), \
+            patch('shutil.rmtree') as mock_rmtree, \
+            patch('logging.Logger.info') as mock_logger_info:
+        post_process_cleanup(repo_info)
+        mock_rmtree.assert_not_called()
+        mock_logger_info.assert_not_called()
+
+def test_post_process_cleanup_exception():
+    repo_info = {
+        'owner': 'repo_owner',
+        'repo_name': 'repo_name'
+    }
+    dir_path = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
+
+    with patch('os.path.exists', return_value=True), \
+            patch('os.path.isdir', return_value=True), \
+            patch('shutil.rmtree', side_effect=Exception('Test exception')), \
+            patch('logging.Logger.error') as mock_logger_error:
+        post_process_cleanup(repo_info)
+        mock_logger_error.assert_called_once_with(f"An error occurred while deleting the directory: Test exception")
