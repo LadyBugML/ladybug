@@ -1,5 +1,9 @@
 from app.api.routes import reorder_rankings
 from app.api.routes import create_changed_files_dict
+from app.api.routes import extract_files
+from unittest.mock import MagicMock, patch
+import zipfile
+import os
 
 def test_create_changed_files_dict_with_added_files():
     github_diff_data = {
@@ -65,7 +69,7 @@ def test_create_changed_files_dicf_with_all_types_of_files():
     }
     result = create_changed_files_dict(github_diff_data, repo_dir)
     assert result == expected_result, f"Expected {expected_result}, but got {result}"
-    
+
 def test_reorder_rankings():
     ranked_files = [
         ("path/to/file1.java", 0.59),
@@ -94,3 +98,76 @@ def test_reorder_rankings():
     boosted_ranked_files = reorder_rankings(ranked_files, gs_files)
 
     assert boosted_ranked_files == expected_boosted_ranked_files, f"Mismatch: {boosted_ranked_files}"
+
+def test_extract_files_with_added_files():
+    changed_files = {
+        "added": ["src/main/java/com/example/NewFile.java"],
+        "modified": [],
+        "removed": []
+    }
+    repo_dir = "repo_dir"
+    zip_archive = MagicMock(spec=zipfile.ZipFile)
+    zip_archive.namelist.return_value = ["repo_dir/src/main/java/com/example/NewFile.java"]
+
+    with patch("builtins.open", new_callable=MagicMock) as mock_open:
+        extract_files(changed_files, zip_archive, repo_dir)
+        mock_open.assert_called_once_with(os.path.join(repo_dir, "src/main/java/com/example/NewFile.java"), "w", encoding="utf-8")
+
+def test_extract_files_with_modified_files():
+    changed_files = {
+        "added": [],
+        "modified": ["src/main/java/com/example/ModifiedFile.java"],
+        "removed": []
+    }
+    repo_dir = "repo_dir"
+    zip_archive = MagicMock(spec=zipfile.ZipFile)
+    zip_archive.namelist.return_value = ["repo_dir/src/main/java/com/example/ModifiedFile.java"]
+
+    with patch("builtins.open", new_callable=MagicMock) as mock_open:
+        extract_files(changed_files, zip_archive, repo_dir)
+        mock_open.assert_called_once_with(os.path.join(repo_dir, "src/main/java/com/example/ModifiedFile.java"), "w", encoding="utf-8")
+
+def test_extract_files_with_removed_files():
+    changed_files = {
+        "added": [],
+        "modified": [],
+        "removed": ["src/main/java/com/example/RemovedFile.java"]
+    }
+    repo_dir = "repo_dir"
+    zip_archive = MagicMock(spec=zipfile.ZipFile)
+
+    with patch("builtins.open", new_callable=MagicMock) as mock_open:
+        extract_files(changed_files, zip_archive, repo_dir)
+        mock_open.assert_not_called()
+
+def test_extract_files_with_mixed_files():
+    changed_files = {
+        "added": ["src/main/java/com/example/NewFile.java"],
+        "modified": ["src/main/java/com/example/ModifiedFile.java"],
+        "removed": ["src/main/java/com/example/RemovedFile.java"]
+    }
+    repo_dir = "repo_dir"
+    zip_archive = MagicMock(spec=zipfile.ZipFile)
+    zip_archive.namelist.return_value = [
+        "repo_dir/src/main/java/com/example/NewFile.java",
+        "repo_dir/src/main/java/com/example/ModifiedFile.java"
+    ]
+
+    with patch("builtins.open", new_callable=MagicMock) as mock_open:
+        extract_files(changed_files, zip_archive, repo_dir)
+        assert mock_open.call_count == 2
+        mock_open.assert_any_call(os.path.join(repo_dir, "src/main/java/com/example/NewFile.java"), "w", encoding="utf-8")
+        mock_open.assert_any_call(os.path.join(repo_dir, "src/main/java/com/example/ModifiedFile.java"), "w", encoding="utf-8")
+
+def test_extract_files_with_no_files():
+    changed_files = {
+        "added": [],
+        "modified": [],
+        "removed": []
+    }
+    repo_dir = "repo_dir"
+    zip_archive = MagicMock(spec=zipfile.ZipFile)
+
+    with patch("builtins.open", new_callable=MagicMock) as mock_open:
+        extract_files(changed_files, zip_archive, repo_dir)
+        mock_open.assert_not_called()
