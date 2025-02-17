@@ -1,6 +1,9 @@
 from app.api.routes import reorder_rankings
 from app.api.routes import create_changed_files_dict
 from app.api.routes import extract_files
+from app.api.routes import post_process_cleanup
+from app.api.routes import write_file_for_report_processing
+
 from unittest.mock import MagicMock, patch
 import zipfile
 import os
@@ -174,7 +177,7 @@ def test_extract_files_with_no_files():
     with patch("builtins.open", new_callable=MagicMock) as mock_open:
         extract_files(changed_files, zip_archive, repo_dir)
         mock_open.assert_not_called()
-        
+
 def test_post_process_cleanup_directory_exists():
     repo_info = {
         'owner': 'repo_owner',
@@ -229,3 +232,36 @@ def test_post_process_cleanup_exception():
             patch('logging.Logger.error') as mock_logger_error:
         post_process_cleanup(repo_info)
         mock_logger_error.assert_called_once_with(f"An error occurred while deleting the directory: Test exception")
+
+def test_write_file_for_report_processing_success():
+    repo_name = "test_repo"
+    issue_content = "This is a test issue content."
+    reports_dir = os.path.join('reports', repo_name)
+    report_file_path = os.path.join(reports_dir, 'report.txt')
+
+    with patch('os.makedirs') as mock_makedirs, \
+            patch('builtins.open', new_callable=MagicMock) as mock_open, \
+            patch('logging.Logger.info') as mock_logger_info:
+        result = write_file_for_report_processing(repo_name, issue_content)
+        mock_makedirs.assert_called_once_with(reports_dir, exist_ok=True)
+        mock_open.assert_called_once_with(report_file_path, 'w', encoding='utf-8')
+        mock_logger_info.assert_called_once_with(f"Issue written to {report_file_path}.")
+        assert result == report_file_path
+
+def test_write_file_for_report_processing_exception():
+    repo_name = "test_repo"
+    issue_content = "This is a test issue content."
+    reports_dir = os.path.join('reports', repo_name)
+    report_file_path = os.path.join(reports_dir, 'report.txt')
+
+    with patch('os.makedirs') as mock_makedirs, \
+            patch('builtins.open', new_callable=MagicMock) as mock_open, \
+            patch('logging.Logger.error') as mock_logger_error:
+        mock_open.side_effect = Exception("Test exception")
+        try:
+            write_file_for_report_processing(repo_name, issue_content)
+        except Exception as e:
+            assert str(e) == "Test exception"
+        mock_makedirs.assert_called_once_with(reports_dir, exist_ok=True)
+        mock_open.assert_called_once_with(report_file_path, 'w', encoding='utf-8')
+        mock_logger_error.assert_called_once_with(f"Failed to write issue to file: Test exception")
