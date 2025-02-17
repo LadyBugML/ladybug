@@ -3,13 +3,13 @@ from app.api.routes import create_changed_files_dict
 from app.api.routes import extract_files
 from app.api.routes import post_process_cleanup
 from app.api.routes import write_file_for_report_processing
+from app.api.routes import change_repository_file_permissions
 
-from unittest.mock import MagicMock, patch
 import zipfile
 import os
-from app.api.routes import post_process_cleanup
 import shutil
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+from stat import S_IWUSR, S_IREAD
 
 def test_create_changed_files_dict_with_added_files():
     github_diff_data = {
@@ -265,3 +265,31 @@ def test_write_file_for_report_processing_exception():
         mock_makedirs.assert_called_once_with(reports_dir, exist_ok=True)
         mock_open.assert_called_once_with(report_file_path, 'w', encoding='utf-8')
         mock_logger_error.assert_called_once_with(f"Failed to write issue to file: Test exception")
+
+def test_change_repository_file_permissions():
+    repo_dir = "test_repo_dir"
+
+    with patch('os.chmod') as mock_chmod, \
+            patch('os.walk', return_value=[(repo_dir, ['subdir'], ['file1', 'file2'])]) as mock_walk:
+        change_repository_file_permissions(repo_dir)
+        
+        # Check if chmod was called for the repo_dir
+        mock_chmod.assert_any_call(repo_dir, S_IWUSR | S_IREAD)
+        
+        # Check if chmod was called for subdirectories and files
+        mock_chmod.assert_any_call(os.path.join(repo_dir, 'subdir'), S_IWUSR | S_IREAD)
+        mock_chmod.assert_any_call(os.path.join(repo_dir, 'file1'), S_IWUSR | S_IREAD)
+        mock_chmod.assert_any_call(os.path.join(repo_dir, 'file2'), S_IWUSR | S_IREAD)
+
+def test_change_repository_file_permissions_with_no_subdirs_or_files():
+    repo_dir = "test_repo_dir"
+
+    with patch('os.chmod') as mock_chmod, \
+            patch('os.walk', return_value=[(repo_dir, [], [])]) as mock_walk:
+        change_repository_file_permissions(repo_dir)
+        
+        # Check if chmod was called for the repo_dir
+        mock_chmod.assert_any_call(repo_dir, S_IWUSR | S_IREAD)
+        
+        # Ensure chmod was not called for any subdirectories or files
+        assert mock_chmod.call_count == 1
