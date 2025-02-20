@@ -3,13 +3,11 @@ import logging
 import os
 import shutil
 import zipfile
-
 from flask import abort
 from git import GitCommandError, Repo
 import requests
 
 from utils.file_utils import change_repository_file_permissions
-
 
 logger = logging.getLogger(__name__)
 

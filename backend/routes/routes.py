@@ -1,7 +1,5 @@
 import logging
-import os
-
-from flask import Blueprint, abort, request, jsonify
+from flask import Blueprint, abort, request
 from dotenv import load_dotenv
 
 from services.initialization_service import initialize

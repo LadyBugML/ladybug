@@ -3,7 +3,6 @@ import os
 import shutil
 from stat import S_IREAD, S_IWUSR
 
-
 logger = logging.getLogger(__name__)
 
 def post_process_cleanup(repo_info):
