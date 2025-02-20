@@ -1,7 +1,4 @@
-from services.extract_gui_data import extract_sc_terms
-from services.extract_gui_data import extract_gs_terms
-from services.extract_gui_data import build_corpus
-from services.extract_gui_data import get_boosted_files
+from services.utils. extract_gui_data import extract_sc_terms, extract_gs_terms, build_corpus, get_boosted_files
 from tests.constants import TEST_EXECUTION_JSON_STRING
 
 def test_extract_SC_terms():

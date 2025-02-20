@@ -1,5 +1,5 @@
 from pathlib import Path
-from services.preprocess import Preprocessor
+from services.utils.preprocess import Preprocessor
 
 def preprocess_source_code(root):
     """
@@ -17,7 +17,7 @@ def preprocess_source_code(root):
 
     preprocessed_files = []
 
-    stop_words_path = Path(__file__).parent / "../data/stop_words/java-keywords-bugs.txt"
+    stop_words_path = Path(__file__).parent / "../../data/stop_words/java-keywords-bugs.txt"
 
     repo = Path(root)
 
