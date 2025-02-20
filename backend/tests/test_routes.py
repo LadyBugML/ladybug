@@ -1,4 +1,4 @@
-from app.api.routes import reorder_rankings
+from routes.routes import reorder_rankings
 
 def test_reorder_rankings():
     ranked_files = [

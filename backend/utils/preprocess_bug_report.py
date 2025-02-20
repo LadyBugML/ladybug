@@ -1,5 +1,5 @@
 import re
-from services.utils.preprocess import Preprocessor
+from utils.preprocess import Preprocessor
 from pathlib import Path
 
 # Main driver method for preprocessing bug reports
@@ -14,7 +14,7 @@ def preprocess_bug_report(bug_report_path: str, sc_terms: list[str]):
         String: The preprocessed bug report
     """
     preprocessor = Preprocessor()
-    stop_words_path = Path(__file__).parent / "../../data/stop_words/java-keywords-bugs.txt"
+    stop_words_path = Path(__file__).parent / "../data/stop_words/java-keywords-bugs.txt"
 
     # Put bug report content into a string
     try:

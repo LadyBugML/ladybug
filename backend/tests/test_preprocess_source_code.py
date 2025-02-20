@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 from pathlib import Path
-from services.utils.preprocess_source_code import preprocess_source_code
+from utils.preprocess_source_code import preprocess_source_code
 from .constants import EXPECTED_SOURCE_CODE_EMBEDDING
 
 # Sample content for Java files

@@ -19,10 +19,10 @@ from stat import S_IWUSR, S_IREAD
 from dotenv import load_dotenv
 
 from database.database import Database
-from services.utils.preprocess_bug_report import preprocess_bug_report
-from services.utils.preprocess_source_code import preprocess_source_code
-from services.utils.extract_gui_data import extract_gs_terms, extract_sc_terms, build_corpus, get_boosted_files
-from services.utils.filter import filter_files
+from utils.preprocess_bug_report import preprocess_bug_report
+from utils.preprocess_source_code import preprocess_source_code
+from utils.extract_gui_data import extract_gs_terms, extract_sc_terms, build_corpus, get_boosted_files
+from utils.filter import filter_files
 from experimental_unixcoder.bug_localization import BugLocalization
 
 # Initialize Database

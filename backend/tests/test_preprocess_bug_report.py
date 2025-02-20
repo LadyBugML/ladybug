@@ -1,7 +1,7 @@
 import pytest
 import torch
 import torch.nn.functional as F
-from services.utils.preprocess_bug_report import preprocess_bug_report
+from utils.preprocess_bug_report import preprocess_bug_report
 from tests.constants import EXPECTED_BUG_REPORT_EMBEDDING
 
 
