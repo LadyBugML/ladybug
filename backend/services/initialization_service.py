@@ -1,14 +1,51 @@
 from datetime import datetime
 import logging
 import os
+
+from flask import abort, jsonify
 from services.db_service import send_initialized_data_to_db
 from services.message_service import send_update_to_probot
 from utils.preprocess_source_code import preprocess_source_code
-from utils.file_utils import clean_embedding_paths_for_db
+from utils.file_utils import clean_embedding_paths_for_db, post_process_cleanup
 from utils.filter import filter_files
-from utils.git_utils import clone_repo
+from utils.git_utils import clone_repo, extract_and_validate_repo_info
 
 logger = logging.getLogger(__name__)
+
+def initialize(data):
+
+    repo_data = data.get('repoData')
+    comment_id = data.get('comment_id')
+    if comment_id is None:
+        comment_id = -1
+
+    repo_info = extract_and_validate_repo_info(repo_data)
+    send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                          "✅ **Initialization Started**: Validating repository information.")
+
+    try:
+        process_and_store_embeddings(repo_info, comment_id)
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "✅ **Cloning Repository**: Repository cloned successfully.")
+    except Exception as e:
+        logger.error(f"Initialization failed: {e}")
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              f"❌ **Initialization Failed**: {e}")
+        abort(500, description=str(e))
+
+    try:
+        post_process_cleanup(repo_info)
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              "✅ **Embeddings Stored**: Embeddings computed and stored successfully.")
+    except Exception as e:
+        logger.error(f"Post-processing failed: {e}")
+        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                              f"⚠️ **Post-Processing Warning**: {e}")
+
+    logger.info('Embeddings stored successfully.')
+    send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
+                          "✅ **Initialization Completed**: All embeddings are up to date.")
+    return jsonify({"message": "Embeddings computed and stored"}), 200
 
 def process_and_store_embeddings(repo_info, comment_id):
     """
