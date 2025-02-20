@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 from stat import S_IWUSR, S_IREAD
 from werkzeug.exceptions import HTTPException
 
-from backend.services.report_service import reorder_rankings
-from backend.utils.file_utils import change_repository_file_permissions, post_process_cleanup, write_file_for_report_processing
-from backend.utils.git_utils import create_changed_files_dict, extract_and_validate_repo_info, extract_files
+from services.report_service import reorder_rankings
+from utils.file_utils import change_repository_file_permissions, post_process_cleanup, write_file_for_report_processing
+from utils.git_utils import create_changed_files_dict, extract_and_validate_repo_info, extract_files
 
 def test_create_changed_files_dict_with_added_files():
     github_diff_data = {
