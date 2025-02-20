@@ -1,4 +1,4 @@
-from routes.routes import reorder_rankings
+from services.report_service import reorder_rankings
 
 def test_reorder_rankings():
     ranked_files = [
