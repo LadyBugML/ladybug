@@ -1,5 +1,5 @@
 import re
-from services.preprocess import Preprocessor
+from utils.preprocess import Preprocessor
 from pathlib import Path
 
 # Main driver method for preprocessing bug reports

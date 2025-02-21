@@ -4,7 +4,7 @@ import logging
 from flask import Flask, jsonify
 from dotenv import find_dotenv, load_dotenv
 
-from app.api.routes import routes
+from routes.routes import routes
 from database.database import Database
 
 # Load environment variables
