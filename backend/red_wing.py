@@ -44,7 +44,7 @@ def localize_buggy_files_with_GUI_data(project_path):
     # output: list(tuple(path, name, content))
     repo_files = to_repo_files(source_code_path)
 
-    corpus = build_corpus(repo_files, sc_terms, null)
+    corpus = build_corpus(repo_files, sc_terms, None)
     boosted_files = get_boosted_files(repo_files, gs_terms)
 
     bug_localizer = BugLocalization()
@@ -118,9 +118,9 @@ def get_buggy_file_rankings(reranked_files, ground_truth_path):
     for rank, (file_path, score) in enumerate(reranked_files, start=1):
         # Check if any bug file name is a substring of the file_path
         for bug_file in bug_file_names:
-            if any(bug_file in file_path): # GETTING AN ERROR HERE
+            if bug_file in str(file_path):
                 results.append((file_path, rank))
 
     return results
 
-localize_buggy_files_without_GUI_data("/Users/dbnsl/senior-design/BuggyProjects/bug-2")
+localize_buggy_files_without_GUI_data("/home/noarchway/CopyBuggy/BuggyProjects/bug-2")
