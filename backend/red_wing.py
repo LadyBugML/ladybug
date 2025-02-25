@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from experimental_unixcoder.bug_localization import BugLocalization
 from services.report_service import reorder_rankings
@@ -38,6 +39,7 @@ o888o  o888o `Y8bod8P' `Y8bod88P"            `8'      `8'       o888o o888o o888
 {RESET}
 """
     print(banner)
+    time.sleep(1)
 
 
 def localize_buggy_files_with_GUI_data(project_path):
@@ -51,7 +53,7 @@ def localize_buggy_files_with_GUI_data(project_path):
     """
     bug_id = int(re.search(r'bug-(\d+)', project_path).group(1))
 
-    trace_path = f'{project_path}/trace/Execution-1.json'
+    trace_path = f'{project_path}/Execution-1.json'
     source_code_path = f'{project_path}/code'
     bug_report_path = f'{project_path}/bug_report_{bug_id}.txt'
     ground_truth_path = f'{project_path}/{bug_id}.json'
