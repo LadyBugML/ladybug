@@ -62,17 +62,15 @@ def localize_buggy_files_with_GUI_data(project_path):
         trace = json.load(f)
 
     print(f"\n{BLUE}{BOLD}Trace Information:{RESET}")
-    print(json.dumps(trace, indent=2))
+    # print(json.dumps(trace, indent=2))
 
-    sc_terms = extract_sc_terms(trace)
-    gs_terms = extract_gs_terms(trace)
+    sc_terms = extract_sc_terms(json.dumps(trace))
+    gs_terms = extract_gs_terms(json.dumps(trace))
 
     filtered_files = filter_files(source_code_path)  # return value not necessary for testing
     preprocessed_files = preprocess_source_code(source_code_path)  # output: list(tuple(path, name, embeddings))
     preprocessed_bug_report = preprocess_bug_report(bug_report_path, sc_terms)  # output: string
 
-    # util function here to transform preprocessed_files currently list(path, name, embeddings) to a tuple with (routes, embeddings)
-    corpus_embeddings = to_corpus_embeddings(preprocessed_files)
 
     # util function here to get code files and content: tuple(file_path, file_name, file_contents)
     # input: source_code path
@@ -80,6 +78,9 @@ def localize_buggy_files_with_GUI_data(project_path):
     repo_files = to_repo_files(source_code_path)
 
     corpus = build_corpus(repo_files, sc_terms, None)
+    # util function here to transform preprocessed_files currently list(path, name, embeddings) to a tuple with (routes, embeddings)
+    corpus_embeddings = to_corpus_embeddings(preprocessed_files, corpus)
+
     boosted_files = get_boosted_files(repo_files, gs_terms)
 
     bug_localizer = BugLocalization()
@@ -113,7 +114,7 @@ def localize_buggy_files_without_GUI_data(project_path):
     print(preprocessed_bug_report)
 
     # util function here to transform preprocessed_files currently list(path, name, embeddings) to a tuple with (routes, embeddings)
-    corpus_embeddings = to_corpus_embeddings(preprocessed_files)
+    corpus_embeddings = to_corpus_embeddings(preprocessed_files, None)
     # print(f"CORPUS EMBEDDINGS: {corpus_embeddings}")
 
     bug_localizer = BugLocalization()
@@ -129,10 +130,16 @@ def localize_buggy_files_without_GUI_data(project_path):
 
     return buggy_file_rankings
 
-def to_corpus_embeddings(preprocessed_files):
+def to_corpus_embeddings(preprocessed_files, corpus: None):
     corpus_embeddings = []
-    for file in preprocessed_files:
-        corpus_embeddings.append((file[0], file[2]))
+    if corpus:    
+        for file in preprocessed_files:
+            if file[0] in corpus:
+                corpus_embeddings.append((file[0], file[2]))
+
+    else:
+        for file in preprocessed_files:
+            corpus_embeddings.append((file[0], file[2]))
     return corpus_embeddings
 
 
@@ -233,7 +240,7 @@ def main():
 
     # Print all repo paths together
     print(f"\n{GREEN}{BOLD}Collected Repo Paths:{RESET}")
-    print(f"{YELLOW}{'\n'.join(repo_paths)}{RESET}")
+    print(f"{YELLOW}"+ f"\n".join(repo_paths) + f"{RESET}")
 
     all_buggy_file_rankings = []
     for path in repo_paths:
