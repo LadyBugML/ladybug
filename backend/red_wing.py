@@ -5,6 +5,8 @@ from utils.preprocess_bug_report import preprocess_bug_report
 from utils.extract_gui_data import build_corpus, extract_gs_terms, extract_sc_terms, get_boosted_files
 from utils.preprocess_source_code import preprocess_source_code
 from utils.filter import filter_files
+
+import datetime
 import json
 import re
 import argparse
@@ -83,10 +85,11 @@ def localize_buggy_files_without_GUI_data(project_path):
     print(f"RANKED FILES: {ranked_files}")
 
     # util function here to get ranking of true buggy files
-    buggy_file_rankings = get_buggy_file_rankings(ranked_files, ground_truth_path)
+    buggy_file_rankings = get_buggy_file_rankings(ranked_files, ground_truth_path, bug_id)
 
     print(f"BUGGY FILE RANKINGS: {buggy_file_rankings}")
 
+    return buggy_file_rankings
 
 def to_corpus_embeddings(preprocessed_files):
     corpus_embeddings = []
@@ -108,7 +111,7 @@ def to_repo_files(source_code_path):
                 return
     return repo_files
 
-def get_buggy_file_rankings(reranked_files, ground_truth_path):
+def get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id):
     # Load the ground truth JSON file
     with open(ground_truth_path, 'r') as f:
         ground_truth = json.load(f)
@@ -118,15 +121,15 @@ def get_buggy_file_rankings(reranked_files, ground_truth_path):
     print(f"BUG FILE NAMES: {bug_file_names}")
 
     results = []
-    # Enumerate the input tuple with 1-indexing
+    
     for rank, (file_path, score) in enumerate(reranked_files, start=1):
         # Check if any bug file name is a substring of the file_path
         for bug_file in bug_file_names:
             if bug_file in str(file_path):
-                results.append((file_path, rank))
+                relative_path = str(file_path).split('/code', 1)[-1]
+                results.append((bug_id, relative_path, rank))
 
     return results
-
 
 def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
     repo_paths = []
@@ -158,7 +161,6 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
 
     return repo_paths
 
-
 def main():
     parser = argparse.ArgumentParser(description="Red Wings script")
     parser.add_argument('-p', required=True, dest="path", help="Repo home path")
@@ -186,12 +188,21 @@ def main():
         return
 
     print("Collected repo paths:")
+
+    all_buggy_file_rankings = []
     for path in repo_paths:
-        localize_buggy_files_without_GUI_data(path)
+        rankings = localize_buggy_files_without_GUI_data(path)
+        all_buggy_file_rankings.append(rankings)
 
+    # Write output to CSV file
 
-def initialize_repo(repo_path):
-    print(f"Initializing repository: {repo_path}")
+    current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
+    csv_file_name = f"{current_time}.csv"
+    with open(csv_file_name, "w") as f:
+        f.write("bug_id,file_path,rank\n")
+        for rankings in all_buggy_file_rankings:
+            for ranking in rankings:
+                f.write(f"{ranking[0]},{ranking[1]},{ranking[2]}\n")
 
 if __name__ == '__main__':
     main()
