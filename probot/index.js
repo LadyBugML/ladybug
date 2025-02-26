@@ -98,7 +98,7 @@ export default (app, {getRouter}) => {
                     owner: ownerName,
                     repo: repoName,
                     issue_number: initIssue.data.number,
-                    body: getInitializationComment(repoName),
+                    body: getRunningComment(),
                 });
 
                 // Store the actual comment ID
@@ -261,15 +261,18 @@ export default (app, {getRouter}) => {
 
 Hello, ${repoName}!
 
-I've been invited to your repository, and I'm thrilled to get started! 🎉 I'm currently working behind the scenes to process your codebase and prepare everything I need to assist you with bug localization. 
+I've been invited to your repository, and I'm thrilled to get started! 🎉
+First things first, I'm going to initialize the repository and prepare for bug localization. This process may take a few minutes, but I'll keep you updated along the way.
 
-Initialization might take a few minutes, so hang tight while I set things up. Here's what I'm doing:
-- 🪄 Preprocessing all source code files.
-- 🔍 Generating embeddings for smarter bug tracking.
-- 🔄 Setting up my internal database for your repo.
-
-I'll let you know as soon as the setup is complete with a follow-up comment below. Thank you for your patience!
 `;
+    }
+
+    function getRunningComment() {
+        return `
+# Setup in Progress 🚀
+Please stand by while we complete the setup.
+
+        `;
     }
 
     function getCompletionComment(repoName) {
@@ -278,11 +281,7 @@ I'll let you know as soon as the setup is complete with a follow-up comment belo
 
 Good news, ${repoName}! 🥳 
 
-The initialization process is now complete, and I'm ready to assist you with your bug localization needs. Here's what I've done:
-- ✅ Successfully preprocessed all source code files.
-- ✅ Generated embeddings for better bug analysis.
-- ✅ Fully integrated with your repository.
-
+The initialization process is now complete, and I'm ready to assist you with your bug localization needs. 
 To get assistance localizing bugs, create a new issue and I will automatically take a look.
 
 I'm here to help you save time and debug smarter. Let the journey to cleaner code begin! 🚀

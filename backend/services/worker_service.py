@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 message_queue = queue.Queue()
 NODE_URL = os.environ.get("NODE_URL") or "http://localhost:3000"
 
+
 def message_worker():
     """
     Background worker that sends messages to Probot from the message_queue.
@@ -15,7 +16,6 @@ def message_worker():
     """
     while True:
         try:
-            # Get the next message from the queue
             owner, repo, comment_id, message = message_queue.get()
             if owner and repo and comment_id and message:
                 success = actual_send_update_to_probot(owner, repo, comment_id, message)
@@ -23,9 +23,9 @@ def message_worker():
                     logger.info(f"Message sent to Probot: {message}")
                 else:
                     logger.error(f"Failed to send message to Probot: {message}")
-
         except Exception as e:
             logger.error(f"Error in message_worker: {e}")
+
 
 def actual_send_update_to_probot(owner, repo, comment_id, message):
     """
@@ -56,6 +56,7 @@ def actual_send_update_to_probot(owner, repo, comment_id, message):
         logger.error(f"Failed to post message to Probot: {e}")
         return False
 
+
 def send_update_to_probot(owner, repo, comment_id, message):
     """
     Enqueues a message to be sent to Probot.
@@ -68,10 +69,9 @@ def send_update_to_probot(owner, repo, comment_id, message):
     """
     if comment_id == -1:
         return
-
     message_queue.put((owner, repo, comment_id, message))
     logger.debug(f"Enqueued message for Probot: {message}")
 
-# Start the background worker thread
+
 worker_thread = threading.Thread(target=message_worker, daemon=True)
 worker_thread.start()

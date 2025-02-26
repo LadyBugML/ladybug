@@ -1,10 +1,9 @@
 from datetime import datetime
 import logging
 import os
-
 import chardet
 from flask import abort, jsonify
-from services.message_service import send_update_to_probot
+from services.messenger_service import ProbotMessenger
 from utils.preprocess_source_code import preprocess_source_code
 from utils.file_utils import clean_embedding_paths_for_db
 from database.database import Database
@@ -12,62 +11,51 @@ from database.database import Database
 db = Database()
 logger = logging.getLogger(__name__)
 
+
 def fetch_all_embeddings(repo_info, comment_id):
+    messenger = ProbotMessenger(repo_info, comment_id)
     try:
-        query = {
-            "repo_name": repo_info['repo_name'],
-            "owner": repo_info['owner']
-        }
+        query = {"repo_name": repo_info['repo_name'], "owner": repo_info['owner']}
         repo_collection = db.get_repo_collection()
         query_repo = repo_collection.find_one(query)
         repo_embeddings = db.get_repo_files_embeddings(query_repo["_id"])
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "✅ **Repository Embeddings Fetched**: Retrieved all repository embeddings from the database.")
-        
+        messenger.send("repo_embeddings_fetched")
         return repo_embeddings
     except Exception as e:
         logger.info('Failed to find repo.')
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "❌ **Repository Embeddings Retrieval Failed**: Could not fetch all repository embeddings from the database.")
+        messenger.send("repo_embeddings_retrieval_failed")
         return jsonify({"message": "Failed to find repo."}), 405
 
+
 def fetch_corpus_embeddings(repo_info, corpus, comment_id):
+    messenger = ProbotMessenger(repo_info, comment_id)
     try:
-        query = {
-            "repo_name": repo_info['repo_name'],
-            "owner": repo_info['owner']
-        }
+        query = {"repo_name": repo_info['repo_name'], "owner": repo_info['owner']}
         repo_collection = db.get_repo_collection()
         query_repo = repo_collection.find_one(query)
         corpus_embeddings = db.get_corpus_files_embeddings(query_repo["_id"], corpus)
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "✅ **Corpus Embeddings Fetched**: Retrieved all corpus embeddings from the database.")
-        
-        return corpus_embeddings;
-
+        messenger.send("corpus_embeddings_fetched")
+        return corpus_embeddings
     except Exception as e:
         logger.info('Failed to find repo.')
-        send_update_to_probot(repo_info['owner'], repo_info['repo_name'], comment_id,
-                              "❌ **Corpus Embeddings Retrieval Failed**: Could not fetch corpus embeddings from the database.")
+        messenger.send("corpus_embeddings_retrieval_failed")
         return jsonify({"message": "Failed to find repo."}), 405
-    
+
+
 def update_sha(repo_info):
     db.get_repo_collection().update_one(
         {'repo_name': repo_info['repo_name'], 'owner': repo_info['owner']},
-        {
-            "$set": {
-                "commit_sha": repo_info['latest_commit_sha']
-            }
-        },
+        {"$set": {"commit_sha": repo_info['latest_commit_sha']}},
         upsert=False
     )
     logger.info(f"Updated commit SHA to {repo_info['latest_commit_sha']} in the database.")
 
-def update_embeddings_in_db(changed_files, clean_files, repo_info):
-    repo_id = db.get_repo_collection().find_one({'repo_name': repo_info['repo_name'], 'owner': repo_info['owner']})[
-        '_id']
-    logger.info(f"Retrieved repo id : {repo_id}")
 
+def update_embeddings_in_db(changed_files, clean_files, repo_info):
+    repo_id = db.get_repo_collection().find_one(
+        {'repo_name': repo_info['repo_name'], 'owner': repo_info['owner']}
+    )['_id']
+    logger.info(f"Retrieved repo id : {repo_id}")
     # Add and update embeddings
     for clean_file in clean_files:
         file_path = clean_file['path']
@@ -76,22 +64,16 @@ def update_embeddings_in_db(changed_files, clean_files, repo_info):
         # Upsert the document in the embeddings collection
         db.get_embeddings_collection().update_one(
             {"repo_id": repo_id, "route": file_path},
-            {
-                "$set": {
-                    "embedding": embedding,
-                    "last_updated": datetime.utcnow().isoformat() + 'Z'
-                }
-            },
+            {"$set": {"embedding": embedding, "last_updated": datetime.utcnow().isoformat() + 'Z'}},
             upsert=True
         )
         logger.info(f"Upserted embedding for file: {file_path}")
-
     # Remove embeddings
     for file_path in changed_files.get("removed", []):
         db.get_embeddings_collection().delete_one({"repo_id": repo_id, "route": file_path})
         logger.info(f"Removed embedding for file: {file_path}")
-
     logger.info("Database updated with added, modified, and removed files.")
+
 
 def send_initialized_data_to_db(repo_info, code_files, filtered_files):
     """
@@ -127,7 +109,6 @@ def send_initialized_data_to_db(repo_info, code_files, filtered_files):
                 upsert=True
             )
             logger.info(f"Stored embedding for file: {file_info['route']}")
-
         logger.info('Repo and code file embeddings stored in database successfully.')
     except Exception as e:
         logger.error(f"Failed to store embeddings in database: {e}")
@@ -147,14 +128,13 @@ def retrieve_stored_sha(owner, repo_name):
     try:
         stored_commit_sha = retrieve_sha_from_db(owner, repo_name)
     except Exception:
-            abort(500, description="Failed to retrieve commit SHA from database.")
-
+        abort(500, description="Failed to retrieve commit SHA from database.")
     if stored_commit_sha:
         logger.debug(f"Stored commit SHA: {stored_commit_sha}")
     else:
         logger.debug("No stored commit SHA found.")
-
     return stored_commit_sha
+
 
 def retrieve_sha_from_db(owner, repo_name):
     """
@@ -182,6 +162,7 @@ def retrieve_sha_from_db(owner, repo_name):
         logger.error(f"Database query failed: {e}")
         raise
 
+
 def insert_to_code_db(route, repo_id):
     try:
         # Read file in binary mode to detect encoding
@@ -195,7 +176,6 @@ def insert_to_code_db(route, repo_id):
         with open(route, "r", encoding=encoding) as file:
             code_content = file.read()
             print("Code content successfully read.")
-
     except FileNotFoundError:
         logger.info(f"Error: The file at {route} was not found.")
     except IOError as e:
@@ -205,7 +185,7 @@ def insert_to_code_db(route, repo_id):
 
     # Create the document to store in the database
     code_file_document = {
-        'repo_id' : repo_id,
+        'repo_id': repo_id,
         'route': route,
         'code content': code_content,
         'last_updated': datetime.utcnow().isoformat() + 'Z'
@@ -219,6 +199,7 @@ def insert_to_code_db(route, repo_id):
     )
     logger.info(f"Stored code for file: {route}")
 
+
 def process_and_patch_embeddings(changed_files, repo_info):
     """
     Processes the repository by cloning, computing embeddings, and storing them. Always performs a fresh setup.
@@ -228,34 +209,29 @@ def process_and_patch_embeddings(changed_files, repo_info):
     repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
 
     # Add updating to the files db here
-    repo_id = db.get_repo_collection().find_one({'repo_name': repo_info['repo_name'], 'owner': repo_info['owner']})['_id']
-
+    repo_id = db.get_repo_collection().find_one(
+        {'repo_name': repo_info['repo_name'], 'owner': repo_info['owner']}
+    )['_id']
     for change_type, files in changed_files.items():
         for file in files:
             route = str(file)
             route = os.path.join(repo_dir, route)
-
             if change_type == 'removed':
-                db.get_files_collection().delete_one(
-                    {'repo_id': repo_id, 'route': route}
-                )
-
+                db.get_files_collection().delete_one({'repo_id': repo_id, 'route': route})
             else:
                 insert_to_code_db(route, repo_id)
 
     # Preprocess the changed source code files
     preprocessed_files = preprocess_source_code(repo_dir)
-
     for file in preprocessed_files:
         logger.info(f"Preprocessed changed file: {file}")
-
     clean_files = clean_embedding_paths_for_db(preprocessed_files, repo_dir)
     update_embeddings_in_db(changed_files, clean_files, repo_info)
     update_sha(repo_info)
+
 
 def retrieve_repo_file_contents(query):
     repo_collection = db.get_repo_collection()
     query_repo = repo_collection.find_one(query)
     repo_files = db.get_repo_file_contents(query_repo["_id"])
-
     return repo_files
