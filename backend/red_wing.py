@@ -89,14 +89,20 @@ def localize_buggy_files_with_GUI_data(project_path):
     reranked_files = reorder_rankings(ranked_files, boosted_files)
 
     # util function here to get ranking of true buggy files
-    buggy_file_rankings = get_buggy_file_rankings(reranked_files, ground_truth_path)
+    buggy_file_rankings = get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id)
 
+    print(buggy_file_rankings)
     print(f"\n{GREEN}{BOLD}Buggy File Rankings (with GUI Data):{RESET}")
+    
+    
     if buggy_file_rankings:
-        for file, rank in buggy_file_rankings:
+        for bug_id, file, rank in buggy_file_rankings:
             print(f"Rank {YELLOW}{rank}{RESET}: {file}")
     else:
         print(f"{RED}No buggy file rankings found.{RESET}")
+
+    return buggy_file_rankings
+
 
 
 def localize_buggy_files_without_GUI_data(project_path):
@@ -132,14 +138,19 @@ def localize_buggy_files_without_GUI_data(project_path):
 
 def to_corpus_embeddings(preprocessed_files, corpus: None):
     corpus_embeddings = []
+    count = 0
     if corpus:    
         for file in preprocessed_files:
             if file[0] in corpus:
+                count+=1
                 corpus_embeddings.append((file[0], file[2]))
 
     else:
         for file in preprocessed_files:
+            count+=1
             corpus_embeddings.append((file[0], file[2]))
+
+    print(f"CORPUS COUNT: {count}")
     return corpus_embeddings
 
 
@@ -250,7 +261,7 @@ def main():
         #     localize_buggy_files_without_GUI_data(path)
         # else:
         #     print(f"{RED}Repository format not recognized for {path
-        rankings = localize_buggy_files_without_GUI_data(path)
+        rankings = localize_buggy_files_with_GUI_data(path)
         all_buggy_file_rankings.append(rankings)
 
     # Write output to CSV file
