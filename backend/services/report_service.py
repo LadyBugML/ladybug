@@ -37,7 +37,6 @@ def process_report(data):
         GUI_DATA = False
         logger.info("No GUI Data Detected")
 
-
     # Extract and validate repository information
     repo_info = extract_and_validate_repo_info(repository)
     messenger = ProbotMessenger(repo_info, comment_id)
@@ -81,11 +80,11 @@ def process_report(data):
             logger.error(f"Failed to recompute embeddings: {e}")
             messenger.send("init_failed", error=str(e))
             abort(500, description=str(e))
-        
+
     # Initialize Bug Localizer and ranked list
     bug_localizer = BugLocalization()
     top_ten_files = []
-    
+
     # Ranking generation with GUI data
     if GUI_DATA:
         # Fetch all source code files from DB for filtering + boosting with GUI data

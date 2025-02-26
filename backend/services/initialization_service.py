@@ -3,7 +3,7 @@ import logging
 import os
 from flask import abort, jsonify
 from services.db_service import send_initialized_data_to_db
-from services.messenger_service  import ProbotMessenger
+from services.messenger_service import ProbotMessenger
 from utils.preprocess_source_code import preprocess_source_code
 from utils.file_utils import clean_embedding_paths_for_db, post_process_cleanup
 from utils.filter import filter_files

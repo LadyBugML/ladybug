@@ -30,6 +30,7 @@ CANNED_RESPONSES = {
     "bug_localization_completed": "🎯 **Bug Localization Completed**: Ranked relevant files identified.",
 }
 
+
 class ProbotMessenger:
     def __init__(self, repo_info, comment_id=-1):
         self.owner = repo_info['owner']
