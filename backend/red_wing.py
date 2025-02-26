@@ -93,8 +93,7 @@ def localize_buggy_files_with_GUI_data(project_path):
 
     print(buggy_file_rankings)
     print(f"\n{GREEN}{BOLD}Buggy File Rankings (with GUI Data):{RESET}")
-    
-    
+
     if buggy_file_rankings:
         for bug_id, file, rank in buggy_file_rankings:
             print(f"Rank {YELLOW}{rank}{RESET}: {file}")
@@ -104,7 +103,6 @@ def localize_buggy_files_with_GUI_data(project_path):
     return buggy_file_rankings
 
 
-
 def localize_buggy_files_without_GUI_data(project_path):
     bug_id = int(re.search(r'bug-(\d+)', project_path).group(1))
 
@@ -112,16 +110,14 @@ def localize_buggy_files_without_GUI_data(project_path):
     bug_report_path = f'{project_path}/bug_report_{bug_id}.txt'
     ground_truth_path = f'{project_path}/{bug_id}.json'
 
-    filtered_files = filter_files(source_code_path)  # return value not necessary for testing
-    preprocessed_files = preprocess_source_code(source_code_path)  # output: list(tuple(path, name, embeddings))
-    preprocessed_bug_report = preprocess_bug_report(bug_report_path, [])  # output: string
+    filtered_files = filter_files(source_code_path)
+    preprocessed_files = preprocess_source_code(source_code_path)
+    preprocessed_bug_report = preprocess_bug_report(bug_report_path, [])
 
     print(f"\n{BLUE}{BOLD}Preprocessed Bug Report:{RESET}")
     print(preprocessed_bug_report)
 
-    # util function here to transform preprocessed_files currently list(path, name, embeddings) to a tuple with (routes, embeddings)
     corpus_embeddings = to_corpus_embeddings(preprocessed_files, None)
-    # print(f"CORPUS EMBEDDINGS: {corpus_embeddings}")
 
     bug_localizer = BugLocalization()
 
@@ -129,27 +125,25 @@ def localize_buggy_files_without_GUI_data(project_path):
     print(f"\n{BLUE}{BOLD}Ranked Files:{RESET}")
     print(ranked_files)
 
-    # util function here to get ranking of true buggy files
     buggy_file_rankings = get_buggy_file_rankings(ranked_files, ground_truth_path, bug_id)
 
     print(f"BUGGY FILE RANKINGS: {buggy_file_rankings}")
 
     return buggy_file_rankings
 
+
 def to_corpus_embeddings(preprocessed_files, corpus: None):
     corpus_embeddings = []
     count = 0
-    if corpus:    
+    if corpus:
         for file in preprocessed_files:
             if file[0] in corpus:
-                count+=1
+                count += 1
                 corpus_embeddings.append((file[0], file[2]))
-
     else:
         for file in preprocessed_files:
-            count+=1
+            count += 1
             corpus_embeddings.append((file[0], file[2]))
-
     print(f"CORPUS COUNT: {count}")
     return corpus_embeddings
 
@@ -168,12 +162,11 @@ def to_repo_files(source_code_path):
                 continue
     return repo_files
 
+
 def get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id):
-    # Load the ground truth JSON file
     with open(ground_truth_path, 'r') as f:
         ground_truth = json.load(f)
 
-    # Extract the list of bug file names from the JSON
     bug_file_names = [bug["file_name"] for bug in ground_truth.get("bug_location", [])]
     print(f"\n{BLUE}{BOLD}Bug File Names:{RESET}")
     print(bug_file_names)
@@ -181,7 +174,6 @@ def get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id):
     results = []
 
     for rank, (file_path, score) in enumerate(reranked_files, start=1):
-        # Check if any bug file name is a substring of the file_path
         for bug_file in bug_file_names:
             if bug_file in str(file_path):
                 relative_path = str(file_path).split('/code', 1)[-1]
@@ -196,16 +188,13 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
     if repo_ids is not None:
         for repo_id in repo_ids:
             repo_path = os.path.join(repo_home, f"bug-{repo_id}")
-            # Verify that the repository directory exists.
             if os.path.isdir(repo_path):
                 repo_paths.append(repo_path)
             else:
                 print(f"{RED}Warning: Repository directory does not exist: {repo_path}{RESET}")
     else:
-        # Get all paths that match the pattern "bug-*"
         all_repos = sorted(glob.glob(os.path.join(repo_home, "bug-*")))
         all_repos = [r for r in all_repos if os.path.isdir(r)]
-
         if flag_all:
             repo_paths = all_repos
         elif repo_count > 0:
@@ -232,8 +221,8 @@ def main():
     group.add_argument('-i', type=int, nargs='+', dest="repo_ids", help="One or more repo IDs")
     args = parser.parse_args()
 
+    start = time.time()
     repo_home = args.path
-    # Verify that the repository home path exists.
     if not os.path.isdir(repo_home):
         print(f"{RED}Error: The provided repo home path does not exist: {repo_home}{RESET}")
         return
@@ -249,22 +238,18 @@ def main():
         print(f"{RED}Error: No repositories found{RESET}")
         return
 
-    # Print all repo paths together
     print(f"\n{GREEN}{BOLD}Collected Repo Paths:{RESET}")
-    print(f"{YELLOW}"+ f"\n".join(repo_paths) + f"{RESET}")
-
+    print(f"{YELLOW}" + f"\n".join(repo_paths) + f"{RESET}")
     all_buggy_file_rankings = []
+    best_rankings_per_bug = []
     for path in repo_paths:
-        # if os.path.isdir(os.path.join(path, "trace")) and os.path.isdir(os.path.join(path, "source_code")):
-        #     localize_buggy_files_with_GUI_data(path)
-        # elif os.path.isdir(os.path.join(path, "code")):
-        #     localize_buggy_files_without_GUI_data(path)
-        # else:
-        #     print(f"{RED}Repository format not recognized for {path
         rankings = localize_buggy_files_with_GUI_data(path)
         all_buggy_file_rankings.append(rankings)
-
-    # Write output to CSV file
+        if rankings:
+            best_rank = min(r[2] for r in rankings)
+            best_rankings_per_bug.append(best_rank)
+        else:
+            best_rankings_per_bug.append(9999)
 
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
     csv_file_name = f"{current_time}.csv"
@@ -273,6 +258,22 @@ def main():
         for rankings in all_buggy_file_rankings:
             for ranking in rankings:
                 f.write(f"{ranking[0]},{ranking[1]},{ranking[2]}\n")
+
+    total_bugs = len(best_rankings_per_bug)
+    hits_10 = hits_at_k(10, best_rankings_per_bug)
+    hits_at_10_ratio = hits_10 / total_bugs if total_bugs > 0 else 0
+    print(f"\n{GREEN}{BOLD}Hits@10 Ratio:{RESET} {hits_10}/{total_bugs} = {hits_at_10_ratio:.2f}")
+
+    end = time.time()
+    print(f"\n{GREEN}{BOLD}Execution Time:{RESET} {end - start:.2f} seconds")
+
+
+def hits_at_k(k, rankings):
+    hits = 0
+    for rank in rankings:
+        if rank <= k:
+            hits += 1
+    return hits
 
 
 if __name__ == '__main__':
