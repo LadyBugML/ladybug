@@ -251,19 +251,31 @@ def main():
         else:
             best_rankings_per_bug.append(9999)
 
+    total_bugs = len(best_rankings_per_bug)
+
+    hist_25 = sum(1 for rank in best_rankings_per_bug if rank <= 25)
+    hits_10 = hits_at_k(10, best_rankings_per_bug)
+    hits_5 = hits_at_k(5, best_rankings_per_bug)
+    hits_1 = hits_at_k(1, best_rankings_per_bug)
+
+    hits_at_10_ratio = hits_10 / total_bugs if total_bugs > 0 else 0
+    hits_at_5_ratio = hits_5 / total_bugs if total_bugs > 0 else 0
+    hits_at_1_ratio = hits_1 / total_bugs if total_bugs > 0 else 0
+
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
     csv_file_name = f"{current_time}.csv"
     with open(csv_file_name, "w") as f:
+        f.write(f"hits@10, {hits_10}/{total_bugs}, {hits_at_10_ratio:.2f}\n")
+        f.write(f"hits@5, {hits_5}/{total_bugs}, {hits_at_5_ratio:.2f}\n")
+        f.write(f"hits@1, {hits_1}/{total_bugs}, {hits_at_1_ratio:.2f}\n")
         f.write("bug_id,file_path,rank\n")
         for rankings in all_buggy_file_rankings:
             for ranking in rankings:
                 f.write(f"{ranking[0]},{ranking[1]},{ranking[2]}\n")
 
-    total_bugs = len(best_rankings_per_bug)
-    hits_10 = hits_at_k(10, best_rankings_per_bug)
-    hits_at_10_ratio = hits_10 / total_bugs if total_bugs > 0 else 0
     print(f"\n{GREEN}{BOLD}Hits@10 Ratio:{RESET} {hits_10}/{total_bugs} = {hits_at_10_ratio:.2f}")
-
+    print(f"\n{GREEN}{BOLD}Hits@5 Ratio:{RESET} {hits_5}/{total_bugs} = {hits_at_5_ratio:.2f}")
+    print(f"\n{GREEN}{BOLD}Hits@1 Ratio:{RESET} {hits_1}/{total_bugs} = {hits_at_1_ratio:.2f}")
     end = time.time()
     print(f"\n{GREEN}{BOLD}Execution Time:{RESET} {end - start:.2f} seconds")
 
