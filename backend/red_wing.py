@@ -253,18 +253,24 @@ def main():
 
     total_bugs = len(best_rankings_per_bug)
 
-    hist_25 = sum(1 for rank in best_rankings_per_bug if rank <= 25)
+    hits_50 = hits_at_k(50, best_rankings_per_bug)
+    hits_25 = hits_at_k(25, best_rankings_per_bug)
     hits_10 = hits_at_k(10, best_rankings_per_bug)
     hits_5 = hits_at_k(5, best_rankings_per_bug)
     hits_1 = hits_at_k(1, best_rankings_per_bug)
 
+    hits_at_50_ratio = hits_50 / total_bugs if total_bugs > 0 else 0
+    hits_at_25_ratio = hits_25 / total_bugs if total_bugs > 0 else 0
     hits_at_10_ratio = hits_10 / total_bugs if total_bugs > 0 else 0
     hits_at_5_ratio = hits_5 / total_bugs if total_bugs > 0 else 0
     hits_at_1_ratio = hits_1 / total_bugs if total_bugs > 0 else 0
 
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
-    csv_file_name = f"{current_time}.csv"
+    csv_file_name = f"metrics/{current_time}.csv"
+    os.makedirs('metrics', exist_ok=True)
     with open(csv_file_name, "w") as f:
+        f.write(f"hits@50, {hits_50}/{total_bugs}, {hits_at_50_ratio:.2f}\n")
+        f.write(f"hits@25, {hits_25}/{total_bugs}, {hits_at_25_ratio:.2f}\n")
         f.write(f"hits@10, {hits_10}/{total_bugs}, {hits_at_10_ratio:.2f}\n")
         f.write(f"hits@5, {hits_5}/{total_bugs}, {hits_at_5_ratio:.2f}\n")
         f.write(f"hits@1, {hits_1}/{total_bugs}, {hits_at_1_ratio:.2f}\n")
