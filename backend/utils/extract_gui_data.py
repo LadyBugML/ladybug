@@ -97,7 +97,7 @@ def check_if_sc_term_exists(search_terms, file_content):
 
     return is_matched_keyword
 
-def build_corpus(source_code_files: list[tuple], sc_terms: list[str], repo_info):
+def build_corpus(source_code_files: list[tuple], sc_terms: list[str], repo_info: None):
     """
     Maps SC terms to files using a brute force approach.
 
@@ -107,15 +107,16 @@ def build_corpus(source_code_files: list[tuple], sc_terms: list[str], repo_info)
     Returns: 
         sc_files (list[str]): A list of strings with each string being the file path of a mapped SC file
     """
-    repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name'])
+
+    repo_dir = os.path.join('repos', repo_info['owner'], repo_info['repo_name']) if repo_info else ''
 
     sc_files = []
 
     for file in source_code_files:
         search_term_exist = check_if_sc_term_exists(sc_terms, file[2])
 
-        if search_term_exist == True:
-            sc_files.append(file[0].replace(repo_dir + '/', ''))
+        if search_term_exist:
+            sc_files.append(file[0].replace(repo_dir + '/', '') if repo_info else file[0])
 
     return sc_files
 
