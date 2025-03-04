@@ -1,4 +1,5 @@
 import torch
+import ollama
 
 try:
     from experimental_unixcoder.unixcoder import UniXcoder  # Try live version
@@ -11,8 +12,8 @@ class BugLocalization:
         # Set up device and initialize the UniXcoder model
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print("CUDA is available" if torch.cuda.is_available() else "CUDA is not available")
-        self.model = UniXcoder("microsoft/unixcoder-base")
-        self.model.to(self.device)
+        #self.model = UniXcoder("microsoft/unixcoder-base")
+        #self.model.to(self.device)
 
         # Encoding for Long Texts
     def encode_text(self, text):
@@ -30,14 +31,23 @@ class BugLocalization:
             print(f"Processing text chunk {i // chunk_size + 1}")  # Debug print
 
             # Tokenize the chunk
-            tokens = self.model.tokenize([text_chunk], mode="<encoder-only>")[0]
-            source_ids = torch.tensor([tokens]).to(self.device)
+            #tokens = self.model.tokenize([text_chunk], mode="<encoder-only>")[0]
+            #source_ids = torch.tensor([tokens]).to(self.device)
             
             # Get model output
             try:
-                _, embedding = self.model(source_ids)
-                norm_embedding = torch.nn.functional.normalize(embedding, p=2, dim=1)
-                embeddings.append(norm_embedding.tolist())  # Store normalized embedding as list
+                #_, embedding = self.model(source_ids)
+                #norm_embedding = torch.nn.functional.normalize(embedding, p=2, dim=1)
+                ollama_output = ollama.embed(model='deepseek-r1:latest', input=text_chunk)
+                embedding_vector = ollama_output["embeddings"]
+                """
+                if embedding_vector:  # Make sure embedding is not empty
+                    tensor_embedding = torch.tensor(embedding_vector, device=self.device)  # Convert to a PyTorch tensor
+                    norm_embedding = torch.nn.functional.normalize(tensor_embedding, p=2, dim=0)  # Normalize to unit length
+                    embeddings.append(norm_embedding.tolist())  # Convert back to list and store
+                """
+                embeddings.append(embedding_vector)  # Store normalized embedding as list
+                
             except Exception as e:
                 print(f"Error processing chunk {i // chunk_size + 1}: {e}")
                 continue
