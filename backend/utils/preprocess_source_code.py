@@ -1,7 +1,7 @@
 from pathlib import Path
 from utils.preprocess import Preprocessor
 
-def preprocess_source_code(root):
+def preprocess_source_code(root, verbose=True):
     """
     Preprocesses all source code files in a source code repository. Assumes all files contained
     in the root directory have had non-.java files filtered out.
@@ -28,7 +28,7 @@ def preprocess_source_code(root):
             try: 
                 with open(file_path, "r", encoding="utf-8") as f:
                     file_content = f.read()
-                    preprocessed_file_content = preprocessor.preprocess_text(file_content, stop_words_path)
+                    preprocessed_file_content = preprocessor.preprocess_text(file_content, stop_words_path, verbose=verbose)
                     preprocessed_files.append((file_path, file_path.name, preprocessed_file_content))
             except FileNotFoundError:
                 print(f"Error: The source code file at '{file_path}' was not found.")
