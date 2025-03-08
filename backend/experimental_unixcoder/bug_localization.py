@@ -10,12 +10,12 @@ class BugLocalization:
     def __init__(self):
         # Set up device and initialize the UniXcoder model
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print("CUDA is available" if torch.cuda.is_available() else "CUDA is not available")
+        # print("CUDA is available" if torch.cuda.is_available() else "CUDA is not available")
         self.model = UniXcoder("microsoft/unixcoder-base")
         self.model.to(self.device)
 
         # Encoding for Long Texts
-    def encode_text(self, text):
+    def encode_text(self, text, verbose=False):
         """
         Encodes long text by splitting it into chunks of roughly 500 characters
         (before tokenization). Each chunk is tokenized and encoded individually.
@@ -27,7 +27,8 @@ class BugLocalization:
         # Split text into roughly 500-character chunks
         for i in range(0, len(text), chunk_size):
             text_chunk = text[i:i + chunk_size]
-            print(f"Processing text chunk {i // chunk_size + 1}")  # Debug print
+            if verbose:
+                print(f"Processing text chunk {i // chunk_size + 1}")  # Debug print
 
             # Tokenize the chunk
             tokens = self.model.tokenize([text_chunk], mode="<encoder-only>")[0]
