@@ -8,6 +8,14 @@ from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_d
 
 console = Console()
 
+# ANSI escape codes for coloring output
+RESET = "\033[0m"
+BOLD = "\033[1m"
+GREEN = "\033[92m"
+BLUE = "\033[94m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+
 def parse_cli_arguments():
     parser = argparse.ArgumentParser(description="Red Wings script")
     parser.add_argument('-p', required=True, dest="path", help="Repo home path")

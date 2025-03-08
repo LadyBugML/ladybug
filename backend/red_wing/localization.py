@@ -14,6 +14,13 @@ from rich.table import Table
 from rich.panel import Panel
 
 console = Console()
+# ANSI escape codes for coloring output
+RESET = "\033[0m"
+BOLD = "\033[1m"
+GREEN = "\033[92m"
+BLUE = "\033[94m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
 
 def reorder_rankings(ranked_files: list[tuple], gs_files: list[str]):
     """Boosts GS files to the top of the ranking while preserving their relative order."""
