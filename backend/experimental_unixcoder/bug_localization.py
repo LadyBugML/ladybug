@@ -22,7 +22,7 @@ class BugLocalization:
         (before tokenization). Each chunk is tokenized and encoded individually.
         Returns a list of embeddings (as lists), one for each chunk.
         """
-        chunk_size = 500  # Split by 500 characters as an example
+        chunk_size = 100000  # Split by 500 characters as an example
         embeddings = []
 
         # Split text into roughly 500-character chunks
@@ -38,7 +38,7 @@ class BugLocalization:
             try:
                 #_, embedding = self.model(source_ids)
                 #norm_embedding = torch.nn.functional.normalize(embedding, p=2, dim=1)
-                ollama_output = ollama.embed(model='deepseek-r1:latest', input=text_chunk)
+                ollama_output = ollama.embed(model='deepseek-coder-v2:latest', input=text_chunk)
                 embedding_vector = ollama_output["embeddings"]
                 """
                 if embedding_vector:  # Make sure embedding is not empty
@@ -46,7 +46,12 @@ class BugLocalization:
                     norm_embedding = torch.nn.functional.normalize(tensor_embedding, p=2, dim=0)  # Normalize to unit length
                     embeddings.append(norm_embedding.tolist())  # Convert back to list and store
                 """
-                embeddings.append(embedding_vector)  # Store normalized embedding as list
+                # Normalize embedding
+                embedding_vector =  torch.tensor(embedding_vector, dtype=torch.float32)
+                embedding_vector = torch.nn.functional.normalize(embedding_vector, p=2, dim=1)
+
+                # Store normalized embedding as list
+                embeddings.append(embedding_vector.tolist())  
                 
             except Exception as e:
                 print(f"Error processing chunk {i // chunk_size + 1}: {e}")

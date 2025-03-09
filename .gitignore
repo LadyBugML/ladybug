@@ -14,3 +14,6 @@ backend/.env
 backend/embeddings_records.txt
 /backend/repos
 /backend/reports/
+/all-buggy-projects-cleaned/
+backend/metrics/
+.vscode
