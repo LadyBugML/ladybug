@@ -4,7 +4,7 @@ import os
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.console import Console
 from rich.table import Table
-from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k
+from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k, map_at_k
 
 console = Console()
 
@@ -59,6 +59,12 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     hits_at_5_ratio = hits_5 / total_bugs if total_bugs > 0 else 0
     hits_at_1_ratio = hits_1 / total_bugs if total_bugs > 0 else 0
 
+    map_at_50 = map_at_k(50, all_buggy_file_rankings)
+    map_at_25 = map_at_k(25, all_buggy_file_rankings)
+    map_at_10 = map_at_k(10, all_buggy_file_rankings)
+    map_at_5 = map_at_k(5, all_buggy_file_rankings)
+    map_at_1 = map_at_k(1, all_buggy_file_rankings)
+
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
     csv_file_name = f"metrics/{current_time}.csv"
     os.makedirs('metrics', exist_ok=True)
@@ -84,5 +90,14 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     table.add_row("Hits@1", f"{hits_1}/{total_bugs}", f"{hits_at_1_ratio:.2f}")
     console.print("\n")
     console.print(table)
-    console.print(f"Mean Average Percision: {all_buggy_file_rankings}")
+    
+    map_table = Table(title="Mean Average Precision Metrics")
+    map_table.add_column("Metric", justify="left", style="cyan")
+    map_table.add_column("Value", justify="center", style="magenta")
+    map_table.add_row("MAP@50", f"{map_at_50:.3f}")
+    map_table.add_row("MAP@25", f"{map_at_25:.3f}")
+    map_table.add_row("MAP@10", f"{map_at_10:.3f}")
+    map_table.add_row("MAP@5", f"{map_at_5:.3f}")
+    map_table.add_row("MAP@1", f"{map_at_1:.3f}")
     console.print("\n")
+    console.print(map_table)

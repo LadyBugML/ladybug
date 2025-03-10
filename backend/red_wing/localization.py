@@ -190,23 +190,44 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
 def hits_at_k(k, rankings):
     return sum(1 for rank in rankings if rank <= k)
 
-"""
-We want to calculate Mean Average Precision (MAP) @ k
-MAP consists of multiple values at once, going over an entire dataset of buggy repos
-On a single bug, calculate the precision value @ k (total buggy files up until file k) / k
-On a buggy project, calculate the average precision sum(all precision @ k values) / total buggy files
-On a dataset, calculate mean average precision (all query AP(k)) / total queries - DONE
+def map_at_k(k, all_buggy_file_rankings):
+    """
+    Calculates Mean Average Precision (MAP) at k for all buggy file rankings
 
+    Args:
+        k (int): Cutoff point for MAP calculation
+        all_buggy_file_rankings (list(tuples)): Ranking output of redwing
 
-The question is: Can we fully calculate this values with the variable all_buggy_file_rankings
-all_buggy_file_rankings is a tuple that contains (bug_id, relative_path, rank), all useful values
-
-
-
-"""
-def mean_average_precision_at_k(k, all_buggy_file_rankings):
-    total_queries = len(all_buggy_file_rankings)
+    Returns:
+        mean_average_precision
+    """
+    total_projects = len(all_buggy_file_rankings)
     average_precisions = []
 
-    mean_average_precision = sum(average_precisions) / total_queries
+    # Calculate average precision@k values for each buggy project
+    for project in all_buggy_file_rankings:
+        precision_values = []
+        relevant_file_count = 0
+
+        # Calculate amount of relevant buggy files up to k
+        # A buggy file is relevant is it appears before or at k
+        # Calculate precision at the buggy file
+        for bug_ranking in project:
+            rank = bug_ranking[2] 
+            # Check if the ranking is within k
+            if(rank <= k): 
+                relevant_file_count+=1
+                precision_at_rank = relevant_file_count / rank
+                precision_values.append(precision_at_rank)
+
+        # Calculate AP@k for the buggy project if any buggy files were ranked within k
+        if precision_values:
+            average_precision = sum(precision_values) / len(precision_values)
+        else:
+            average_precision = 0
+        
+        average_precisions.append(average_precision)
+
+    # Calculate MAP for entire dataset
+    mean_average_precision = sum(average_precisions) / total_projects
     return mean_average_precision
