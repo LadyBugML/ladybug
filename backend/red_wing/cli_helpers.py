@@ -84,5 +84,5 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     table.add_row("Hits@1", f"{hits_1}/{total_bugs}", f"{hits_at_1_ratio:.2f}")
     console.print("\n")
     console.print(table)
-    console.print("Mean Average Percision:")
+    console.print(f"Mean Average Percision: {all_buggy_file_rankings}")
     console.print("\n")

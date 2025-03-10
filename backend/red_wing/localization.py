@@ -189,3 +189,24 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
 
 def hits_at_k(k, rankings):
     return sum(1 for rank in rankings if rank <= k)
+
+"""
+We want to calculate Mean Average Precision (MAP) @ k
+MAP consists of multiple values at once, going over an entire dataset of buggy repos
+On a single bug, calculate the precision value @ k (total buggy files up until file k) / k
+On a buggy project, calculate the average precision sum(all precision @ k values) / total buggy files
+On a dataset, calculate mean average precision (all query AP(k)) / total queries - DONE
+
+
+The question is: Can we fully calculate this values with the variable all_buggy_file_rankings
+all_buggy_file_rankings is a tuple that contains (bug_id, relative_path, rank), all useful values
+
+
+
+"""
+def mean_average_precision_at_k(k, all_buggy_file_rankings):
+    total_queries = len(all_buggy_file_rankings)
+    average_precisions = []
+
+    mean_average_precision = sum(average_precisions) / total_queries
+    return mean_average_precision
