@@ -137,7 +137,7 @@ With both the backend and bot running:
 
 ## Red Wing
 
-**Red Wing** is a local testing and metrics tool designed specifically for Ladybug. It extrapolates the bug localization pipeline so that users can run any of our 80 test datasets to evaluate the accuracy and metrics of Red Wing in a controlled, local environment.
+**Red Wing** is a local testing and metrics tool designed specifically for Ladybug. It extrapolates the bug localization pipeline so that users can run any of our 80 test datasets to evaluate the accuracy and metrics of LadyBug in a controlled, local environment.
 
 ### What It Does
 
