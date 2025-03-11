@@ -22,11 +22,13 @@ BLUE = "\033[94m"
 YELLOW = "\033[93m"
 RED = "\033[91m"
 
+
 def reorder_rankings(ranked_files: list[tuple], gs_files: list[str]):
     """Boosts GS files to the top of the ranking while preserving their relative order."""
     gs_ranked = [item for item in ranked_files if item[0] in gs_files]
     non_gs_ranked = [item for item in ranked_files if item[0] not in gs_files]
     return gs_ranked + non_gs_ranked
+
 
 def localize_buggy_files_with_GUI_data(project_path, verbose=False):
     """
@@ -90,6 +92,7 @@ def localize_buggy_files_with_GUI_data(project_path, verbose=False):
 
     return buggy_file_rankings
 
+
 def localize_buggy_files_without_GUI_data(project_path, verbose=False):
     bug_id = int(re.search(r'bug-(\d+)', project_path).group(1))
     source_code_path = os.path.join(project_path, "code")
@@ -115,12 +118,14 @@ def localize_buggy_files_without_GUI_data(project_path, verbose=False):
     buggy_file_rankings = get_buggy_file_rankings(ranked_files, ground_truth_path, bug_id)
 
     console.print("\n")
-    console.print(Panel(f"BUGGY FILE RANKINGS: {buggy_file_rankings}", title="Buggy File Rankings", border_style="blue"))
+    console.print(
+        Panel(f"BUGGY FILE RANKINGS: {buggy_file_rankings}", title="Buggy File Rankings", border_style="blue"))
     console.print("\n")
 
     return buggy_file_rankings
 
-def to_corpus_embeddings(preprocessed_files, corpus: None):
+
+def to_corpus_embeddings(preprocessed_files, corpus=None):
     corpus_embeddings = []
     count = 0
     if corpus:
@@ -135,6 +140,7 @@ def to_corpus_embeddings(preprocessed_files, corpus: None):
     console.print(f"\nCORPUS COUNT: {count}\n")
     return corpus_embeddings
 
+
 def to_repo_files(source_code_path):
     repo_files = []
     repo = Path(source_code_path)
@@ -147,6 +153,7 @@ def to_repo_files(source_code_path):
             except FileNotFoundError:
                 console.print(f"\n{RED}Error: The source code file at '{file_path}' was not found.{RESET}\n")
     return repo_files
+
 
 def get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id):
     with open(ground_truth_path, 'r') as f:
@@ -162,6 +169,7 @@ def get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id):
                 relative_path = str(file_path).split('/code', 1)[-1]
                 results.append((bug_id, relative_path, rank))
     return results
+
 
 def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
     repo_paths = []
@@ -179,13 +187,15 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
             repo_paths = all_repos
         elif repo_count and repo_count > 0:
             if repo_count > len(all_repos):
-                console.print(f"\n{YELLOW}Requested {repo_count} repos but only found {len(all_repos)}. Using all available repos.{RESET}\n")
+                console.print(
+                    f"\n{YELLOW}Requested {repo_count} repos but only found {len(all_repos)}. Using all available repos.{RESET}\n")
                 repo_paths = all_repos
             else:
                 repo_paths = random.sample(all_repos, repo_count)
         else:
             console.print(f"\n{RED}Error: Invalid arguments provided{RESET}\n")
     return repo_paths
+
 
 def hits_at_k(k, rankings):
     return sum(1 for rank in rankings if rank <= k)
@@ -213,9 +223,9 @@ def map_at_k(k, all_buggy_file_rankings):
         # A buggy file is relevant is it appears before or at k
         # Calculate precision at the buggy file
         for bug_ranking in project:
-            rank = bug_ranking[2] 
+            rank = bug_ranking[2]
             # Check if the ranking is within k
-            if(rank <= k): 
+            if rank <= k:
                 relevant_file_count+=1
                 precision_at_rank = relevant_file_count / rank
                 precision_values.append(precision_at_rank)
@@ -225,9 +235,47 @@ def map_at_k(k, all_buggy_file_rankings):
             average_precision = sum(precision_values) / len(precision_values)
         else:
             average_precision = 0
-        
+
         average_precisions.append(average_precision)
 
     # Calculate MAP for entire dataset
     mean_average_precision = sum(average_precisions) / total_projects
     return mean_average_precision
+
+def find_first_rank(k, buggy_file_rankings):
+    best_rank = float('inf')  # Set to infinity initially
+    for b_id, file, rank in buggy_file_rankings:
+        if rank <= k:
+            best_rank = min(best_rank, rank)
+    return best_rank if best_rank != float('inf') else float('inf')  # Avoid returning 0
+
+
+def sum_reciprocal_rank(k, rankings):
+    first_rank = find_first_rank(k, rankings)
+    return 1 / first_rank if first_rank != float('inf') else 0
+
+
+# Computes Mean Reciprocal Rank (MRR@K) across all projects
+def mrr_at_k(k, all_buggy_file_rankings):
+    """
+    Calculates Mean Reciprocal Rank (MRR) at k for all buggy file rankings.
+
+    Args:
+        k (int): Cutoff point for MRR calculation.
+        all_buggy_file_rankings (list of lists of tuples): Rankings per project.
+
+    Returns:
+        float: Mean Reciprocal Rank at K.
+    """
+    total_projects = len(all_buggy_file_rankings)
+    if total_projects == 0:
+        return 0
+
+    reciprocal_ranks = []
+
+    # Compute reciprocal rank for each project
+    for project in all_buggy_file_rankings:
+        reciprocal_rank = sum_reciprocal_rank(k, project)
+        reciprocal_ranks.append(reciprocal_rank)
+
+    return sum(reciprocal_ranks) / total_projects

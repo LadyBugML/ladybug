@@ -4,7 +4,7 @@ import os
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.console import Console
 from rich.table import Table
-from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k, map_at_k
+from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k, map_at_k, mrr_at_k
 
 console = Console()
 
@@ -65,6 +65,12 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     map_at_5 = map_at_k(5, all_buggy_file_rankings)
     map_at_1 = map_at_k(1, all_buggy_file_rankings)
 
+    mrr_at_50 = mrr_at_k(50, all_buggy_file_rankings)
+    mrr_at_25 = mrr_at_k(25, all_buggy_file_rankings)
+    mrr_at_10 = mrr_at_k(10, all_buggy_file_rankings)
+    mrr_at_5 = mrr_at_k(5, all_buggy_file_rankings)
+    mrr_at_1 = mrr_at_k(1, all_buggy_file_rankings)
+
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
     csv_file_name = f"metrics/{current_time}.csv"
     os.makedirs('metrics', exist_ok=True)
@@ -74,6 +80,19 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
         f.write(f"hits@10, {hits_10}/{total_bugs}, {hits_at_10_ratio:.2f}\n")
         f.write(f"hits@5, {hits_5}/{total_bugs}, {hits_at_5_ratio:.2f}\n")
         f.write(f"hits@1, {hits_1}/{total_bugs}, {hits_at_1_ratio:.2f}\n")
+        f.write(f"\n")
+        f.write(f"map@50, {map_at_50:.3f}\n")
+        f.write(f"map@25, {map_at_25:.3f}\n")
+        f.write(f"map@10, {map_at_10:.3f}\n")
+        f.write(f"map@5, {map_at_5:.3f}\n")
+        f.write(f"map@1, {map_at_1:.3f}\n")
+        f.write(f"\n")
+        f.write(f"mrr@50, {mrr_at_50:.3f}\n")
+        f.write(f"mrr@25, {mrr_at_25:.3f}\n")
+        f.write(f"mrr@10, {mrr_at_10:.3f}\n")
+        f.write(f"mrr@5, {mrr_at_5:.3f}\n")
+        f.write(f"mrr@1, {mrr_at_1:.3f}\n")
+        f.write(f"\n")
         f.write("bug_id,file_path,rank\n")
         for rankings in all_buggy_file_rankings:
             for ranking in rankings:
@@ -101,3 +120,16 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     map_table.add_row("MAP@1", f"{map_at_1:.3f}")
     console.print("\n")
     console.print(map_table)
+
+    mrr_table = Table(title="Mean Reciprocal Rank Metrics")
+    mrr_table.add_column("Metric", justify="left", style="cyan")
+    mrr_table.add_column("Value", justify="center", style="magenta")
+    mrr_table.add_row("MRR@50", f"{mrr_at_50:.3f}")
+    mrr_table.add_row("MRR@25", f"{mrr_at_25:.3f}")
+    mrr_table.add_row("MRR@10", f"{mrr_at_10:.3f}")
+    mrr_table.add_row("MRR@5", f"{mrr_at_5:.3f}")
+    mrr_table.add_row("MRR@1", f"{mrr_at_1:.3f}")
+    console.print("\n")
+    console.print(mrr_table)
+
+    console.print(f"\nMetrics saved to {csv_file_name}")
