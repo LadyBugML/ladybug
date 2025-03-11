@@ -76,6 +76,13 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
         f.write(f"hits@10, {hits_10}/{total_bugs}, {hits_at_10_ratio:.2f}\n")
         f.write(f"hits@5, {hits_5}/{total_bugs}, {hits_at_5_ratio:.2f}\n")
         f.write(f"hits@1, {hits_1}/{total_bugs}, {hits_at_1_ratio:.2f}\n")
+
+        f.write(f"\n")
+        f.write(f"best effectiveness, {effectiveness[0]}\n")
+        f.write(f"worst effectiveness, {effectiveness[1]}\n")
+        f.write(f"mean effectiveness, {effectiveness[2]:.3f}\n")
+        f.write(f"\n")
+
         f.write("bug_id,file_path,rank\n")
         for rankings in all_buggy_file_rankings:
             for ranking in rankings:
