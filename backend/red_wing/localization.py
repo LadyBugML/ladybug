@@ -75,7 +75,7 @@ def localize_buggy_files_with_GUI_data(project_path, verbose=False):
     ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
     reranked_files = reorder_rankings(ranked_files, boosted_files)
     buggy_file_rankings = get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id)
-
+    
     if buggy_file_rankings:
         table = Table(title=f"Buggy File Rankings for Bug {bug_id}")
         table.add_column("Rank", justify="center", style="yellow")
@@ -164,9 +164,10 @@ def get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id):
     console.print("\n")
     results = []
     for rank, (file_path, score) in enumerate(reranked_files, start=1):
+        normalized_path = str(Path(file_path).as_posix())  # Convert to Linux-style
         for bug_file in bug_file_names:
-            if bug_file in str(file_path):
-                relative_path = str(file_path).split('/code', 1)[-1]
+            if bug_file in normalized_path:
+                relative_path = normalized_path.split('/code', 1)[-1]
                 results.append((bug_id, relative_path, rank))
     return results
 
