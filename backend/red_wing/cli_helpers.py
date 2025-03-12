@@ -4,7 +4,7 @@ import os
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.console import Console
 from rich.table import Table
-from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k, map_at_k
+from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k, map_at_k, calculate_effectiveness
 
 console = Console()
 
@@ -65,6 +65,8 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     map_at_5 = map_at_k(5, all_buggy_file_rankings)
     map_at_1 = map_at_k(1, all_buggy_file_rankings)
 
+    effectiveness = calculate_effectiveness(all_buggy_file_rankings)
+
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
     csv_file_name = f"metrics/{current_time}.csv"
     os.makedirs('metrics', exist_ok=True)
@@ -74,6 +76,13 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
         f.write(f"hits@10, {hits_10}/{total_bugs}, {hits_at_10_ratio:.2f}\n")
         f.write(f"hits@5, {hits_5}/{total_bugs}, {hits_at_5_ratio:.2f}\n")
         f.write(f"hits@1, {hits_1}/{total_bugs}, {hits_at_1_ratio:.2f}\n")
+
+        f.write(f"\n")
+        f.write(f"best effectiveness, {effectiveness[0]}\n")
+        f.write(f"worst effectiveness, {effectiveness[1]}\n")
+        f.write(f"mean effectiveness, {effectiveness[2]:.3f}\n")
+        f.write(f"\n")
+
         f.write("bug_id,file_path,rank\n")
         for rankings in all_buggy_file_rankings:
             for ranking in rankings:
@@ -101,3 +110,12 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
     map_table.add_row("MAP@1", f"{map_at_1:.3f}")
     console.print("\n")
     console.print(map_table)
+
+    effectiveness_table = Table(title="Effectiveness Metrics")
+    effectiveness_table.add_column("Metric", justify="left", style="cyan")
+    effectiveness_table.add_column("Value", justify="center", style="magenta")
+    effectiveness_table.add_row("Best Effectiveness", f"{effectiveness[0]}")
+    effectiveness_table.add_row("Worst Effectiveness", f"{effectiveness[1]}")
+    effectiveness_table.add_row("Mean Effectiveness", f"{effectiveness[2]:.3f}")
+    console.print("\n")
+    console.print(effectiveness_table)
