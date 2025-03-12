@@ -279,3 +279,17 @@ def mrr_at_k(k, all_buggy_file_rankings):
         reciprocal_ranks.append(reciprocal_rank)
 
     return sum(reciprocal_ranks) / total_projects
+def calculate_effectiveness(buggy_file_rankings):
+    """
+    Calculate the minimum, maximum, and average ranks of buggy files in the rankings
+
+    Args:
+        buggy_file_rankings (list(tuples)): Ranking output of redwing
+    """
+    best_ranks = []
+    for ranking in buggy_file_rankings:
+        if ranking:
+            best_rank = min(r[2] for r in ranking if len(r) >= 3)
+            best_ranks.append(best_rank)
+
+    return (min(best_ranks), max(best_ranks), sum(best_ranks) / len(best_ranks))
