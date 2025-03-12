@@ -13,4 +13,5 @@ backend/.env
 /myenv/
 backend/embeddings_records.txt
 /backend/repos
+backend/metrics
 /backend/reports/
