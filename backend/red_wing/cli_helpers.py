@@ -4,7 +4,7 @@ import os
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.console import Console
 from rich.table import Table
-from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, hits_at_k, map_at_k, mrr_at_k, calculate_effectiveness
+from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, localize_buggy_files_without_GUI_data, hits_at_k, map_at_k, mrr_at_k, calculate_effectiveness, calculate_improvement
 
 console = Console()
 
@@ -20,33 +20,73 @@ def parse_cli_arguments():
     parser = argparse.ArgumentParser(description="Red Wings script")
     parser.add_argument('-p', required=True, dest="path", help="Repo home path")
     parser.add_argument('-v', action='store_true', help="Verbose output")
+    parser.add_argument('-imp', action='store_true', help="Calculate relative improvement between base and GUI-enhanced rankings")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-a', action='store_true', help="Iterate over all repos")
     group.add_argument('-r', type=int, dest="repo_count", help="Number of repos to randomly select")
     group.add_argument('-i', type=int, nargs='+', dest="repo_ids", help="One or more repo IDs")
     return parser.parse_args()
 
-def process_repos(repo_paths, verbose):
-    all_buggy_file_rankings = []
-    best_rankings_per_bug = []
+def process_repos(repo_paths, verbose, improvement):
+    all_buggy_file_rankings_gui = []
+    best_rankings_per_bug_gui = []
+    best_rankings_per_bug_base = []
+
+
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TextColumn("{task.completed}/{task.total} repos")
     ) as progress:
         task = progress.add_task("Processing repos...", total=len(repo_paths))
-        for path in repo_paths:
-            rankings = localize_buggy_files_with_GUI_data(path, verbose=verbose)
-            all_buggy_file_rankings.append(rankings)
-            if rankings:
-                best_rank = min(r[2] for r in rankings)
-                best_rankings_per_bug.append(best_rank)
-            else:
-                best_rankings_per_bug.append(9999)
-            progress.update(task, advance=1)
-    return all_buggy_file_rankings, best_rankings_per_bug
 
-def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
+        for path in repo_paths:
+            if improvement:
+                # Run GUI-enhanced localization
+                rankings_gui = localize_buggy_files_with_GUI_data(path, verbose=verbose)
+                all_buggy_file_rankings_gui.append(rankings_gui)
+
+                best_rank_gui = min(r[2] for r in rankings_gui) if rankings_gui else 9999
+                best_rankings_per_bug_gui.append(best_rank_gui)
+
+                # Run baseline localization
+                rankings_base = localize_buggy_files_without_GUI_data(path, verbose=verbose)
+
+                best_rank_base = min(r[2] for r in rankings_base) if rankings_base else 9999
+                best_rankings_per_bug_base.append(best_rank_base)
+            else:
+                # Default to GUI-enhanced method only
+                rankings = localize_buggy_files_with_GUI_data(path, verbose=verbose)
+                all_buggy_file_rankings_gui.append(rankings)
+
+                best_rank = min(r[2] for r in rankings) if rankings else 9999
+                best_rankings_per_bug_gui.append(best_rank)
+
+            progress.update(task, advance=1)
+
+    if improvement:
+        return (all_buggy_file_rankings_gui, best_rankings_per_bug_gui, best_rankings_per_bug_base)
+    
+    return all_buggy_file_rankings_gui, best_rankings_per_bug_gui
+
+def output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base):
+    # Compute Hits@10 for both GUI and baseline
+    gui_hits_at_10 = hits_at_k(10, best_rankings_gui)
+    base_hits_at_10 = hits_at_k(10, best_rankings_base)
+
+    improvement = calculate_improvement(gui_hits_at_10, base_hits_at_10)
+    
+    output_metrics(all_buggy_file_rankings_gui, best_rankings_gui, improvement)
+    
+    improvement_table = Table(title="Relative Imrpovement Metrics")
+    improvement_table.add_column("Metric", justify="left", style="cyan")
+    improvement_table.add_column("Value", justify="center", style="magenta")
+    improvement_table.add_row("Relative Improvement @ 10", f"{improvement:.3f}")
+    console.print("\n")
+    console.print(improvement_table)
+
+    
+def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: None):
     total_bugs = len(best_rankings_per_bug)
     hits_50 = hits_at_k(50, best_rankings_per_bug)
     hits_25 = hits_at_k(25, best_rankings_per_bug)
@@ -101,6 +141,9 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug):
         f.write(f"worst effectiveness, {effectiveness[1]}\n")
         f.write(f"mean effectiveness, {effectiveness[2]:.3f}\n")
         f.write(f"\n")
+
+        if improvement:
+            f.write(f"relative improvement, {improvement:.3f}\n")
 
         f.write("bug_id,file_path,rank\n")
         for rankings in all_buggy_file_rankings:

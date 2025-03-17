@@ -3,7 +3,7 @@ import time
 from rich.console import Console
 from rich.table import Table
 from red_wing.localization import collect_repos
-from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics
+from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics, output_metrics_with_improvement
 console = Console()
 
 # ANSI escape codes for coloring output
@@ -36,6 +36,7 @@ def main():
     args = parse_cli_arguments()
     verbose = args.v
     repo_home = args.path
+    improvement = args.imp
     if not os.path.isdir(repo_home):
         console.print(f"\nError: The provided repo home path does not exist: {repo_home}\n")
         return
@@ -58,8 +59,14 @@ def main():
     console.print(repo_table)
     console.print("\n")
 
-    all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose)
-    output_metrics(all_buggy_file_rankings, best_rankings_per_bug)
+    if(improvement):
+        (all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base) = process_repos(repo_paths, verbose, improvement)
+
+        output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base)
+
+    else:
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, improvement)
+        output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
 
 if __name__ == '__main__':
     main()
