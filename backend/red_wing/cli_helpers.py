@@ -63,10 +63,21 @@ def output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_g
     
     output_metrics(all_buggy_file_rankings_gui, best_rankings_gui, improvement)
     
-    improvement_table = Table(title="Relative Imrpovement Metrics")
+    improvement_table = Table(title="Relative Improvement Metrics")
     improvement_table.add_column("Metric", justify="left", style="cyan")
     improvement_table.add_column("Value", justify="center", style="magenta")
     improvement_table.add_row("Relative Improvement @ 10", f"{improvement:.3f}")
+
+    base_hits_table = Table(title="BASE HITS AT 10")
+    base_hits_table.add_column("Metric", justify="left", style="cyan")
+    base_hits_table.add_column("Value", justify="center", style="magenta")
+    base_hits_table.add_row("Base Hits @ 10", f"{base_hits_at_10}")
+
+    gui_hits_table = Table(title="ENHANCED HITS AT 10")
+    gui_hits_table.add_column("Metric", justify="left", style="cyan")
+    gui_hits_table.add_column("Value", justify="center", style="magenta")
+    gui_hits_table.add_row("Ehanced Hits @ 10", f"{gui_hits_at_10}")
+
     console.print("\n")
     console.print(improvement_table)
 
@@ -88,7 +99,7 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: 
 
     mrr = calculate_mrr(all_buggy_file_rankings)
 
-    effectiveness = calculate_effectiveness(all_buggy_file_rankings)
+    effectiveness = calculate_effectiveness(all_buggy_file_rankings) * 100
 
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
     csv_file_name = f"metrics/{current_time}.csv"
