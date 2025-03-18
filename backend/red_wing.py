@@ -1,5 +1,6 @@
 import os
 import time
+import torch
 from rich.console import Console
 from rich.table import Table
 from red_wing.localization import collect_repos
@@ -32,6 +33,8 @@ o888o  o888o `Y8bod8P' `Y8bod88P"            `8'      `8'       o888o o888o o888
     time.sleep(1)
 
 def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("CUDA is available" if device.type == "cuda" else "CUDA is not available")
     print_banner()
     args = parse_cli_arguments()
     verbose = args.v
