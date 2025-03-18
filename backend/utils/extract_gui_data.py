@@ -18,7 +18,7 @@ def extract_sc_terms(json_string: str):
 
     data = json.loads(json_string)
 
-    last_4_steps = data["steps"][-4:]
+    last_4_steps = data["steps"][-2:]
     sc_terms = set()
 
     for step in last_4_steps:

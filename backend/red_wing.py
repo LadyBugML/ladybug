@@ -1,10 +1,14 @@
+# file: backend/red_wing.py
 import os
 import time
 import torch
 from rich.console import Console
 from rich.table import Table
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from red_wing.localization import collect_repos
-from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics, output_metrics_with_improvement
+from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics, output_metrics_with_improvement, \
+    output_big_metrics, output_big_metrics_with_improvement
+
 console = Console()
 
 # ANSI escape codes for coloring output
@@ -14,6 +18,7 @@ GREEN = "\033[92m"
 BLUE = "\033[94m"
 YELLOW = "\033[93m"
 RED = "\033[91m"
+
 
 def print_banner():
     banner = f"""
@@ -32,6 +37,24 @@ o888o  o888o `Y8bod8P' `Y8bod88P"            `8'      `8'       o888o o888o o888
     print(banner)
     time.sleep(1)
 
+
+# New function to run a single loop iteration in parallel
+def run_loop(loop_number, repo_paths, verbose, improvement, base):
+    # This function runs one loop iteration
+    if improvement:
+        (all_buggy_file_rankings_gui, best_rankings_gui) = process_repos(repo_paths, verbose, True)  # with gui
+        (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose, False)  # without gui
+        output_big_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base,
+                                            loop_number)
+    elif base:
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, False)
+        output_big_metrics(all_buggy_file_rankings, best_rankings_per_bug, None, loop_number)
+    else:
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, True)
+        output_big_metrics(all_buggy_file_rankings, best_rankings_per_bug, None, loop_number)
+    return f"Loop {loop_number} completed"
+
+
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("CUDA is available" if device.type == "cuda" else "CUDA is not available")
@@ -41,6 +64,8 @@ def main():
     repo_home = args.path
     improvement = args.m
     base = args.b
+    loop_count = args.loop  # new flag
+
     if not os.path.isdir(repo_home):
         console.print(f"\nError: The provided repo home path does not exist: {repo_home}\n")
         return
@@ -63,19 +88,31 @@ def main():
     console.print(repo_table)
     console.print("\n")
 
-    if(improvement):
-        (all_buggy_file_rankings_gui, best_rankings_gui) = process_repos(repo_paths, verbose, True) # with gui
-        (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose, False) # without gui
-
-        output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base)
-
-    elif(base):
-        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, False)
-        output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
-
+    # If looping, run the entire process in parallel with 3 workers
+    if loop_count > 1:
+        with ProcessPoolExecutor(max_workers=3) as executor:
+            futures = []
+            for i in range(1, loop_count + 1):
+                console.print(f"Submitting loop {i}")
+                futures.append(executor.submit(run_loop, i, repo_paths, verbose, improvement, base))
+            for future in as_completed(futures):
+                result = future.result()
+                console.print(result)
     else:
-        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, True)
-        output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
+        if (improvement):
+            (all_buggy_file_rankings_gui, best_rankings_gui) = process_repos(repo_paths, verbose, True)  # with gui
+            (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose,
+                                                                               False)  # without gui
+            output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base)
+        elif (base):
+            all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, False)
+            output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
+        else:
+            all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, True)
+            output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
+
 
 if __name__ == '__main__':
+    import multiprocessing as mp
+    mp.set_start_method('spawn', force=True)
     main()
