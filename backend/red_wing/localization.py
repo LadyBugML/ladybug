@@ -212,7 +212,7 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
 def hits_at_k(k, rankings):
     return sum(1 for rank in rankings if rank <= k)
 
-def map_at_k(k, all_buggy_file_rankings):
+def calculate_map(all_buggy_file_rankings):
     """
     Calculates Mean Average Precision (MAP) at k for all buggy file rankings
 
@@ -231,18 +231,16 @@ def map_at_k(k, all_buggy_file_rankings):
         precision_values = []
         relevant_file_count = 0
 
-        # Calculate amount of relevant buggy files up to k
-        # A buggy file is relevant is it appears before or at k
+        # Calculate amount of relevant buggy files
         # Calculate precision at the buggy file
         for bug_ranking in project:
             rank = bug_ranking[2]
-            # Check if the ranking is within k
-            if rank <= k:
-                relevant_file_count+=1
-                precision_at_rank = relevant_file_count / rank
-                precision_values.append(precision_at_rank)
 
-        # Calculate AP@k for the buggy project if any buggy files were ranked within k
+            relevant_file_count+=1
+            precision_at_rank = relevant_file_count / rank
+            precision_values.append(precision_at_rank)
+
+        # Calculate AP for the buggy project
         if precision_values:
             average_precision = sum(precision_values) / len(precision_values)
         else:
@@ -254,21 +252,20 @@ def map_at_k(k, all_buggy_file_rankings):
     mean_average_precision = sum(average_precisions) / total_projects
     return mean_average_precision
 
-def find_first_rank(k, buggy_file_rankings):
+def find_first_rank(buggy_file_rankings):
     best_rank = float('inf')  # Set to infinity initially
     for b_id, file, rank in buggy_file_rankings:
-        if rank <= k:
-            best_rank = min(best_rank, rank)
+        best_rank = min(best_rank, rank)
     return best_rank if best_rank != float('inf') else float('inf')  # Avoid returning 0
 
 
-def sum_reciprocal_rank(k, rankings):
-    first_rank = find_first_rank(k, rankings)
+def sum_reciprocal_rank(rankings):
+    first_rank = find_first_rank(rankings)
     return 1 / first_rank if first_rank != float('inf') else 0
 
 
 # Computes Mean Reciprocal Rank (MRR@K) across all projects
-def mrr_at_k(k, all_buggy_file_rankings):
+def calculate_mrr(all_buggy_file_rankings):
     """
     Calculates Mean Reciprocal Rank (MRR) at k for all buggy file rankings.
 
@@ -287,7 +284,7 @@ def mrr_at_k(k, all_buggy_file_rankings):
 
     # Compute reciprocal rank for each project
     for project in all_buggy_file_rankings:
-        reciprocal_rank = sum_reciprocal_rank(k, project)
+        reciprocal_rank = sum_reciprocal_rank(project)
         reciprocal_ranks.append(reciprocal_rank)
 
     return sum(reciprocal_ranks) / total_projects

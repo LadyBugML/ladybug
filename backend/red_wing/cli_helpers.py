@@ -4,7 +4,7 @@ import os
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.console import Console
 from rich.table import Table
-from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, localize_buggy_files_without_GUI_data, hits_at_k, map_at_k, mrr_at_k, calculate_effectiveness, calculate_improvement
+from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, localize_buggy_files_without_GUI_data, hits_at_k, calculate_map, calculate_mrr, calculate_effectiveness, calculate_improvement
 
 console = Console()
 
@@ -27,47 +27,28 @@ def parse_cli_arguments():
     group.add_argument('-i', type=int, nargs='+', dest="repo_ids", help="One or more repo IDs")
     return parser.parse_args()
 
-def process_repos(repo_paths, verbose, improvement):
-    all_buggy_file_rankings_gui = []
-    best_rankings_per_bug_gui = []
-    best_rankings_per_bug_base = []
-
-
+def process_repos(repo_paths, verbose, enhanced: True):
+    all_buggy_file_rankings = []
+    best_rankings_per_bug = []
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TextColumn("{task.completed}/{task.total} repos")
     ) as progress:
         task = progress.add_task("Processing repos...", total=len(repo_paths))
-
         for path in repo_paths:
-            if improvement:
-                # Run GUI-enhanced localization
-                rankings_gui = localize_buggy_files_with_GUI_data(path, verbose=verbose)
-                all_buggy_file_rankings_gui.append(rankings_gui)
-
-                best_rank_gui = min(r[2] for r in rankings_gui) if rankings_gui else 9999
-                best_rankings_per_bug_gui.append(best_rank_gui)
-
-                # Run baseline localization
-                rankings_base = localize_buggy_files_without_GUI_data(path, verbose=verbose)
-
-                best_rank_base = min(r[2] for r in rankings_base) if rankings_base else 9999
-                best_rankings_per_bug_base.append(best_rank_base)
-            else:
-                # Default to GUI-enhanced method only
+            if(enhanced):
                 rankings = localize_buggy_files_with_GUI_data(path, verbose=verbose)
-                all_buggy_file_rankings_gui.append(rankings)
-
-                best_rank = min(r[2] for r in rankings) if rankings else 9999
-                best_rankings_per_bug_gui.append(best_rank)
-
+            else:
+                rankings = localize_buggy_files_without_GUI_data(path, verbose=verbose)
+            all_buggy_file_rankings.append(rankings)
+            if rankings:
+                best_rank = min(r[2] for r in rankings)
+                best_rankings_per_bug.append(best_rank)
+            else:
+                best_rankings_per_bug.append(9999)
             progress.update(task, advance=1)
-
-    if improvement:
-        return (all_buggy_file_rankings_gui, best_rankings_per_bug_gui, best_rankings_per_bug_base)
-    
-    return all_buggy_file_rankings_gui, best_rankings_per_bug_gui
+    return all_buggy_file_rankings, best_rankings_per_bug
 
 def output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base):
     # Compute Hits@10 for both GUI and baseline
@@ -99,17 +80,10 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: 
     hits_at_5_ratio = hits_5 / total_bugs if total_bugs > 0 else 0
     hits_at_1_ratio = hits_1 / total_bugs if total_bugs > 0 else 0
 
-    map_at_50 = map_at_k(50, all_buggy_file_rankings)
-    map_at_25 = map_at_k(25, all_buggy_file_rankings)
-    map_at_10 = map_at_k(10, all_buggy_file_rankings)
-    map_at_5 = map_at_k(5, all_buggy_file_rankings)
-    map_at_1 = map_at_k(1, all_buggy_file_rankings)
+    map = calculate_map(all_buggy_file_rankings)
 
-    mrr_at_50 = mrr_at_k(50, all_buggy_file_rankings)
-    mrr_at_25 = mrr_at_k(25, all_buggy_file_rankings)
-    mrr_at_10 = mrr_at_k(10, all_buggy_file_rankings)
-    mrr_at_5 = mrr_at_k(5, all_buggy_file_rankings)
-    mrr_at_1 = mrr_at_k(1, all_buggy_file_rankings)
+    mrr = calculate_mrr(all_buggy_file_rankings)
+
     effectiveness = calculate_effectiveness(all_buggy_file_rankings)
 
     current_time = datetime.datetime.now().strftime("%m%d%y%H%M")
@@ -123,18 +97,10 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: 
         f.write(f"hits@1, {hits_1}/{total_bugs}, {hits_at_1_ratio:.2f}\n")
         f.write(f"\n")
 
-        f.write(f"map@50, {map_at_50:.3f}\n")
-        f.write(f"map@25, {map_at_25:.3f}\n")
-        f.write(f"map@10, {map_at_10:.3f}\n")
-        f.write(f"map@5, {map_at_5:.3f}\n")
-        f.write(f"map@1, {map_at_1:.3f}\n")
+        f.write(f"map, {map:.3f}\n")
         f.write(f"\n")
 
-        f.write(f"mrr@50, {mrr_at_50:.3f}\n")
-        f.write(f"mrr@25, {mrr_at_25:.3f}\n")
-        f.write(f"mrr@10, {mrr_at_10:.3f}\n")
-        f.write(f"mrr@5, {mrr_at_5:.3f}\n")
-        f.write(f"mrr@1, {mrr_at_1:.3f}\n")
+        f.write(f"mrr, {mrr:.3f}\n")
         f.write(f"\n")
 
         f.write(f"best effectiveness, {effectiveness[0]}\n")
@@ -165,22 +131,14 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: 
     map_table = Table(title="Mean Average Precision Metrics")
     map_table.add_column("Metric", justify="left", style="cyan")
     map_table.add_column("Value", justify="center", style="magenta")
-    map_table.add_row("MAP@50", f"{map_at_50:.3f}")
-    map_table.add_row("MAP@25", f"{map_at_25:.3f}")
-    map_table.add_row("MAP@10", f"{map_at_10:.3f}")
-    map_table.add_row("MAP@5", f"{map_at_5:.3f}")
-    map_table.add_row("MAP@1", f"{map_at_1:.3f}")
+    map_table.add_row("MAP", f"{map:.3f}")
     console.print("\n")
     console.print(map_table)
 
     mrr_table = Table(title="Mean Reciprocal Rank Metrics")
     mrr_table.add_column("Metric", justify="left", style="cyan")
     mrr_table.add_column("Value", justify="center", style="magenta")
-    mrr_table.add_row("MRR@50", f"{mrr_at_50:.3f}")
-    mrr_table.add_row("MRR@25", f"{mrr_at_25:.3f}")
-    mrr_table.add_row("MRR@10", f"{mrr_at_10:.3f}")
-    mrr_table.add_row("MRR@5", f"{mrr_at_5:.3f}")
-    mrr_table.add_row("MRR@1", f"{mrr_at_1:.3f}")
+    mrr_table.add_row("MRR", f"{mrr:.3f}")
     console.print("\n")
     console.print(mrr_table)
 

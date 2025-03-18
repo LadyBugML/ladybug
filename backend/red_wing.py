@@ -60,12 +60,13 @@ def main():
     console.print("\n")
 
     if(improvement):
-        (all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base) = process_repos(repo_paths, verbose, improvement)
+        (all_buggy_file_rankings_gui, best_rankings_gui) = process_repos(repo_paths, verbose, True) # with gui
+        (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose, False) # without gui
 
         output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base)
 
     else:
-        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, improvement)
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, True)
         output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
 
 if __name__ == '__main__':
