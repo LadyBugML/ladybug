@@ -36,7 +36,8 @@ def main():
     args = parse_cli_arguments()
     verbose = args.v
     repo_home = args.path
-    improvement = args.imp
+    improvement = args.m
+    base = args.b
     if not os.path.isdir(repo_home):
         console.print(f"\nError: The provided repo home path does not exist: {repo_home}\n")
         return
@@ -64,6 +65,10 @@ def main():
         (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose, False) # without gui
 
         output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base)
+
+    elif(base):
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, False)
+        output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
 
     else:
         all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, True)

@@ -20,11 +20,15 @@ def parse_cli_arguments():
     parser = argparse.ArgumentParser(description="Red Wings script")
     parser.add_argument('-p', required=True, dest="path", help="Repo home path")
     parser.add_argument('-v', action='store_true', help="Verbose output")
-    parser.add_argument('-imp', action='store_true', help="Calculate relative improvement between base and GUI-enhanced rankings")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-a', action='store_true', help="Iterate over all repos")
-    group.add_argument('-r', type=int, dest="repo_count", help="Number of repos to randomly select")
-    group.add_argument('-i', type=int, nargs='+', dest="repo_ids", help="One or more repo IDs")
+    
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument('-m', action='store_true', help="Calculate relative improvement between base and GUI-enhanced rankings")
+    mode_group.add_argument('-b', action='store_true', help="Run base localization")
+
+    iteration_group = parser.add_mutually_exclusive_group(required=True)
+    iteration_group.add_argument('-a', action='store_true', help="Iterate over all repos")
+    iteration_group.add_argument('-r', type=int, dest="repo_count", help="Number of repos to randomly select")
+    iteration_group.add_argument('-i', type=int, nargs='+', dest="repo_ids", help="One or more repo IDs")
     return parser.parse_args()
 
 def process_repos(repo_paths, verbose, enhanced: True):
