@@ -80,6 +80,13 @@ def output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_g
 
     console.print("\n")
     console.print(improvement_table)
+    console.print("\n")
+
+    console.print(base_hits_table)
+    console.print("\n")
+
+    console.print(gui_hits_table)
+    console.print("\n")
 
     
 def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: None):
