@@ -55,14 +55,16 @@ def process_repos(repo_paths, verbose, enhanced: True):
     return all_buggy_file_rankings, best_rankings_per_bug
 
 def output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base):
-    # Compute Hits@10 for both GUI and baseline
+    # Compute Hits@10 for both GUI and baseline, then the relative improvement
     gui_hits_at_10 = hits_at_k(10, best_rankings_gui)
     base_hits_at_10 = hits_at_k(10, best_rankings_base)
-
     improvement = calculate_improvement(gui_hits_at_10, base_hits_at_10)
-    
-    output_metrics(all_buggy_file_rankings_gui, best_rankings_gui, improvement)
-    
+
+    # Tuple containing all the relevant improvement information to be outputted
+    improvement_stats = (improvement, gui_hits_at_10, base_hits_at_10)
+
+    output_metrics(all_buggy_file_rankings_gui, best_rankings_gui, improvement_stats)
+
     improvement_table = Table(title="Relative Improvement Metrics")
     improvement_table.add_column("Metric", justify="left", style="cyan")
     improvement_table.add_column("Value", justify="center", style="magenta")
@@ -80,16 +82,9 @@ def output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_g
 
     console.print("\n")
     console.print(improvement_table)
-    console.print("\n")
 
-    console.print(base_hits_table)
-    console.print("\n")
 
-    console.print(gui_hits_table)
-    console.print("\n")
-
-    
-def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: None):
+def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement_stats: None):
     total_bugs = len(best_rankings_per_bug)
     hits_50 = hits_at_k(50, best_rankings_per_bug)
     hits_25 = hits_at_k(25, best_rankings_per_bug)
@@ -130,9 +125,12 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: 
         f.write(f"mean effectiveness, {effectiveness[2]:.3f}\n")
         f.write(f"\n")
 
-        if improvement:
-            f.write(f"relative improvement, {improvement:.3f}\n")
-
+        if improvement_stats:
+            f.write(f"relative improvement, {improvement_stats[0]:.3f}\n")
+            f.write(f"gui hits@10, {improvement_stats[1]}\n")
+            f.write(f"base hits@10, {improvement_stats[2]}\n")
+            f.write(f"\n")
+            
         f.write("bug_id,file_path,rank\n")
         for rankings in all_buggy_file_rankings:
             for ranking in rankings:
