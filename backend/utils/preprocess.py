@@ -1,4 +1,5 @@
 import re
+import os
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import wordpunct_tokenize
 from nltk.corpus import wordnet as wn
@@ -105,7 +106,7 @@ class Preprocessor:
         # Call the get_pos_tag function to assign the correct POS tag to each token in tokens
         return [lemmatizer.lemmatize(token, Preprocessor.get_pos_tag(token)) for token in tokens]        
     
-    def preprocess_text(self, text, stop_words_path, verbose=True):
+    def preprocess_text(self, filename, text, stop_words_path, verbose=True):
         """
         Preprocesses input text by
             - Removing Numbers
@@ -152,10 +153,20 @@ class Preprocessor:
         # Join the tokens into a single string and remove cases
         preprocessed_text = " ".join(tokens)
 
+        csv_file_name = f"metrics/preprocessed_data/bug-2-preprocessed-data.csv"
+        os.makedirs('metrics/preprocessed_data', exist_ok=True)
+
         if verbose:
-            print(preprocessed_text)
+            with open("metrics/preprocessed_data/bug-2-preprocessed-data.csv", "a") as f:
+                f.write(f"\"{filename}\", \"{preprocessed_text}\"\n")
+            # print(preprocessed_text)
 
         # Calculate embeddings for preprocessed text
         preprocessed_text = self.bug_localizer.encode_text(preprocessed_text,verbose=verbose)
+
+        if verbose:
+            with open("metrics/preprocessed_data/bug-2-preprocessed-data-embeddings.csv", "a") as f:
+                f.write(f"\"{filename}\", {preprocessed_text}\n")
+            print(preprocessed_text)
 
         return preprocessed_text
