@@ -35,7 +35,6 @@ o888o  o888o `Y8bod8P' `Y8bod88P"            `8'      `8'       o888o o888o o888
 {RESET}
 """
     print(banner)
-    time.sleep(1)
 
 
 # New function to run a single loop iteration in parallel
