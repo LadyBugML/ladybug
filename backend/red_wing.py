@@ -1,9 +1,10 @@
 import os
 import time
+import torch
 from rich.console import Console
 from rich.table import Table
 from red_wing.localization import collect_repos
-from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics
+from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics, output_metrics_with_improvement
 console = Console()
 
 # ANSI escape codes for coloring output
@@ -32,10 +33,14 @@ o888o  o888o `Y8bod8P' `Y8bod88P"            `8'      `8'       o888o o888o o888
     time.sleep(1)
 
 def main():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("CUDA is available" if device.type == "cuda" else "CUDA is not available")
     print_banner()
     args = parse_cli_arguments()
     verbose = args.v
     repo_home = args.path
+    improvement = args.m
+    base = args.b
     if not os.path.isdir(repo_home):
         console.print(f"\nError: The provided repo home path does not exist: {repo_home}\n")
         return
@@ -58,8 +63,19 @@ def main():
     console.print(repo_table)
     console.print("\n")
 
-    all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose)
-    output_metrics(all_buggy_file_rankings, best_rankings_per_bug)
+    if(improvement):
+        (all_buggy_file_rankings_gui, best_rankings_gui) = process_repos(repo_paths, verbose, True) # with gui
+        (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose, False) # without gui
+
+        output_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base)
+
+    elif(base):
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, False)
+        output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
+
+    else:
+        all_buggy_file_rankings, best_rankings_per_bug = process_repos(repo_paths, verbose, True)
+        output_metrics(all_buggy_file_rankings, best_rankings_per_bug, None)
 
 if __name__ == '__main__':
     main()
