@@ -137,9 +137,6 @@ class Preprocessor:
             print(f"Error: The stop words at '{stop_words_path}' were not found.")
             return
 
-        # Remove stop words
-        tokens = [token for token in tokens if token not in stop_words]
-
         # Remove cases
         tokens = [token.lower() for token in tokens]
 
@@ -148,6 +145,9 @@ class Preprocessor:
         
         # Remove short tokens
         tokens = [token for token in tokens if len(token) > 2]
+
+        # Remove stop words
+        tokens = [token for token in tokens if token not in stop_words]
 
         # Join the tokens into a single string and remove cases
         preprocessed_text = " ".join(tokens)
