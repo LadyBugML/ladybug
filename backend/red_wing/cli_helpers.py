@@ -7,6 +7,9 @@ from rich.table import Table
 from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, \
     localize_buggy_files_without_GUI_data, hits_at_k, calculate_map, calculate_mrr, calculate_effectiveness, \
     calculate_improvement
+import inquirer
+import os
+from types import SimpleNamespace
 
 console = Console()
 
@@ -20,24 +23,77 @@ RED = "\033[91m"
 
 
 def parse_cli_arguments():
-    parser = argparse.ArgumentParser(description="Red Wings script")
-    parser.add_argument('-p', required=True, dest="path", help="Repo home path")
-    parser.add_argument('-v', action='store_true', help="Verbose output")
+    # Define the cache file path in the user's home directory
+    cache_file = os.path.expanduser('~/.red_wing_last_repo_home')
+    default_repo_home = None
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            default_repo_home = f.read().strip()
 
-    mode_group = parser.add_mutually_exclusive_group()
-    mode_group.add_argument('-m', action='store_true',
-                            help="Calculate relative improvement between base and GUI-enhanced rankings")
-    mode_group.add_argument('-b', action='store_true', help="Run base localization")
+    # First, ask common questions: repo home path, verbose, mode, and iteration mode.
+    common_questions = [
+        inquirer.Text('path', message="Enter the repo home path", default=default_repo_home),
+        inquirer.Confirm('v', message="Enable verbose output?", default=False),
+        inquirer.List('mode', message="Select localization mode", choices=[
+            ('Run enhanced localization (default)', 'default'),
+            ('Calculate relative improvement between base and GUI-enhanced rankings', 'm'),
+            ('Run base localization', 'b')
+        ]),
+        inquirer.List('iteration', message="Select iteration mode", choices=[
+            ('Iterate over all repos', 'a'),
+            ('Select number of repos to randomly select', 'r'),
+            ('Select one or more repo IDs', 'i')
+        ])
+    ]
+    answers = inquirer.prompt(common_questions)
 
-    iteration_group = parser.add_mutually_exclusive_group(required=True)
-    iteration_group.add_argument('-a', action='store_true', help="Iterate over all repos")
-    iteration_group.add_argument('-r', type=int, dest="repo_count", help="Number of repos to randomly select")
-    iteration_group.add_argument('-i', type=int, nargs='+', dest="repo_ids", help="One or more repo IDs")
+    # Cache the repo home path for future runs.
+    with open(cache_file, 'w') as f:
+        f.write(answers['path'])
 
-    # New flag for looping the entire script
-    parser.add_argument('-l', type=int, dest="loop", default=1, help="Loop the entire script n times")
+    # Branch: ask additional questions based on the selected iteration mode.
+    if answers['iteration'] == 'r':
+        additional_questions = [
+            inquirer.Text('repo_count', message="Enter number of repos to randomly select")
+        ]
+        extra_answers = inquirer.prompt(additional_questions)
+        answers.update(extra_answers)
+        answers['repo_ids'] = None
+    elif answers['iteration'] == 'i':
+        additional_questions = [
+            inquirer.Text('repo_ids', message="Enter one or more repo IDs separated by spaces")
+        ]
+        extra_answers = inquirer.prompt(additional_questions)
+        answers.update(extra_answers)
+        answers['repo_count'] = None
+    else:
+        answers['repo_count'] = None
+        answers['repo_ids'] = None
 
-    return parser.parse_args()
+    # Finally, ask for the number of loops.
+    loop_question = [
+        inquirer.Text('loop', message="Enter number of loops", default='1')
+    ]
+    loop_answer = inquirer.prompt(loop_question)
+    answers.update(loop_answer)
+
+    # Process mode selection: set flags for improvement or base mode.
+    m = (answers['mode'] == 'm')
+    b = (answers['mode'] == 'b')
+    loop = int(answers['loop'])
+    repo_count = int(answers['repo_count']) if answers.get('repo_count') else None
+    repo_ids = [int(x) for x in answers['repo_ids'].split()] if answers.get('repo_ids') else None
+
+    return SimpleNamespace(
+        path=answers['path'],
+        v=answers['v'],
+        m=m,
+        b=b,
+        a=(answers['iteration'] == 'a'),
+        repo_count=repo_count,
+        repo_ids=repo_ids,
+        loop=loop
+    )
 
 
 def process_repos(repo_paths, verbose, enhanced: True):

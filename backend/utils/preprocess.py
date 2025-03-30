@@ -140,7 +140,7 @@ class Preprocessor:
 
         # Remove stop words
         tokens = [token for token in tokens if token not in stop_words]
-
+        
         # Remove cases
         tokens = [token.lower() for token in tokens]
 
