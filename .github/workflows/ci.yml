@@ -30,6 +30,12 @@ jobs:
                   key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
                   restore-keys: |
                       ${{ runner.os }}-pip-
+            - name: Check for NVIDIA dependencies
+              run: |
+                  if grep -q 'nvidia-|triton' requirements.txt; then
+                      echo "NVIDIA dependencies found in requirements.txt. Failing build."
+                      exit 1
+                  fi
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
