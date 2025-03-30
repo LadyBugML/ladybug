@@ -35,9 +35,9 @@ def parse_cli_arguments():
         inquirer.Text('path', message="Enter the repo home path", default=default_repo_home),
         inquirer.Confirm('v', message="Enable verbose output?", default=False),
         inquirer.List('mode', message="Select localization mode", choices=[
+            ('Run enhanced localization (default)', 'default'),
             ('Calculate relative improvement between base and GUI-enhanced rankings', 'm'),
-            ('Run base localization', 'b'),
-            ('Run enhanced localization (default)', 'default')
+            ('Run base localization', 'b')
         ]),
         inquirer.List('iteration', message="Select iteration mode", choices=[
             ('Iterate over all repos', 'a'),
