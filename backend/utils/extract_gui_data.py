@@ -73,7 +73,7 @@ def extract_gs_terms(json_string: str):
 
         # Use Regex to match windows only if the FRAGMENT tag is present
         gs_window = re.search(r'FRAGMENT:(.+)', window)
-        if gs_window:
+        if gs_window and len(gs_window.group(1)) > 1:
             gs_terms.add(gs_window.group(1))
 
     return list(gs_terms)

@@ -77,7 +77,7 @@ def localize_buggy_files_with_GUI_data(project_path, verbose=False):
     buggy_file_rankings = get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id)
     
     if buggy_file_rankings:
-        table = Table(title=f"Buggy File Rankings for Bug {bug_id}")
+        table = Table(title=f"GUI-Enhanced Buggy File Rankings for Bug {bug_id}")
         table.add_column("Rank", justify="center", style="yellow")
         table.add_column("File", justify="left", style="green")
         for b_id, file, rank in buggy_file_rankings:
@@ -94,33 +94,44 @@ def localize_buggy_files_with_GUI_data(project_path, verbose=False):
 
 
 def localize_buggy_files_without_GUI_data(project_path, verbose=False):
+    """
+    Process a repository that doesn't contain GUI data.
+    Expects the following in project_path:
+      - code/ (source code directory)
+      - bug_report_{bug-id}.txt
+      - {bug-id}.json (ground truth)
+    """
     bug_id = int(re.search(r'bug-(\d+)', project_path).group(1))
     source_code_path = os.path.join(project_path, "code")
     bug_report_path = os.path.join(project_path, f"bug_report_{bug_id}.txt")
     ground_truth_path = os.path.join(project_path, f"{bug_id}.json")
 
-    filtered_files = filter_files(source_code_path)
-    preprocessed_files = preprocess_source_code(source_code_path, verbose=verbose)
-    preprocessed_bug_report = preprocess_bug_report(bug_report_path, [], verbose=verbose)
+    # Empty term arrays
+    sc_terms = []
+    gs_terms = []
 
-    console.print("\n")
-    console.print(Panel(preprocessed_bug_report, title="Preprocessed Bug Report", border_style="blue"))
-    console.print("\n")
+    preprocessed_files = preprocess_source_code(source_code_path, verbose=verbose)
+    preprocessed_bug_report = preprocess_bug_report(bug_report_path, sc_terms, verbose=verbose)
 
     corpus_embeddings = to_corpus_embeddings(preprocessed_files, None)
+
     bug_localizer = BugLocalization()
     ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
-
-    console.print("\n")
-    console.print(Panel(str(ranked_files), title="Ranked Files", border_style="blue"))
-    console.print("\n")
-
     buggy_file_rankings = get_buggy_file_rankings(ranked_files, ground_truth_path, bug_id)
-
-    console.print("\n")
-    console.print(
-        Panel(f"BUGGY FILE RANKINGS: {buggy_file_rankings}", title="Buggy File Rankings", border_style="blue"))
-    console.print("\n")
+    
+    if buggy_file_rankings:
+        table = Table(title=f"Base Buggy File Rankings for Bug {bug_id}")
+        table.add_column("Rank", justify="center", style="yellow")
+        table.add_column("File", justify="left", style="green")
+        for b_id, file, rank in buggy_file_rankings:
+            table.add_row(str(rank), file)
+        console.print("\n")
+        console.print(table)
+        console.print("\n")
+    else:
+        console.print("\n")
+        console.print(Panel("No buggy file rankings found.", title=f"Bug {bug_id} Rankings", border_style="red"))
+        console.print("\n")
 
     return buggy_file_rankings
 
@@ -201,7 +212,7 @@ def collect_repos(repo_home, flag_all=False, repo_count=None, repo_ids=None):
 def hits_at_k(k, rankings):
     return sum(1 for rank in rankings if rank <= k)
 
-def map_at_k(k, all_buggy_file_rankings):
+def calculate_map(all_buggy_file_rankings):
     """
     Calculates Mean Average Precision (MAP) at k for all buggy file rankings
 
@@ -220,18 +231,16 @@ def map_at_k(k, all_buggy_file_rankings):
         precision_values = []
         relevant_file_count = 0
 
-        # Calculate amount of relevant buggy files up to k
-        # A buggy file is relevant is it appears before or at k
+        # Calculate amount of relevant buggy files
         # Calculate precision at the buggy file
         for bug_ranking in project:
             rank = bug_ranking[2]
-            # Check if the ranking is within k
-            if rank <= k:
-                relevant_file_count+=1
-                precision_at_rank = relevant_file_count / rank
-                precision_values.append(precision_at_rank)
 
-        # Calculate AP@k for the buggy project if any buggy files were ranked within k
+            relevant_file_count+=1
+            precision_at_rank = relevant_file_count / rank
+            precision_values.append(precision_at_rank)
+
+        # Calculate AP for the buggy project
         if precision_values:
             average_precision = sum(precision_values) / len(precision_values)
         else:
@@ -243,21 +252,20 @@ def map_at_k(k, all_buggy_file_rankings):
     mean_average_precision = sum(average_precisions) / total_projects
     return mean_average_precision
 
-def find_first_rank(k, buggy_file_rankings):
+def find_first_rank(buggy_file_rankings):
     best_rank = float('inf')  # Set to infinity initially
     for b_id, file, rank in buggy_file_rankings:
-        if rank <= k:
-            best_rank = min(best_rank, rank)
+        best_rank = min(best_rank, rank)
     return best_rank if best_rank != float('inf') else float('inf')  # Avoid returning 0
 
 
-def sum_reciprocal_rank(k, rankings):
-    first_rank = find_first_rank(k, rankings)
+def sum_reciprocal_rank(rankings):
+    first_rank = find_first_rank(rankings)
     return 1 / first_rank if first_rank != float('inf') else 0
 
 
 # Computes Mean Reciprocal Rank (MRR@K) across all projects
-def mrr_at_k(k, all_buggy_file_rankings):
+def calculate_mrr(all_buggy_file_rankings):
     """
     Calculates Mean Reciprocal Rank (MRR) at k for all buggy file rankings.
 
@@ -276,10 +284,11 @@ def mrr_at_k(k, all_buggy_file_rankings):
 
     # Compute reciprocal rank for each project
     for project in all_buggy_file_rankings:
-        reciprocal_rank = sum_reciprocal_rank(k, project)
+        reciprocal_rank = sum_reciprocal_rank(project)
         reciprocal_ranks.append(reciprocal_rank)
 
     return sum(reciprocal_ranks) / total_projects
+
 def calculate_effectiveness(buggy_file_rankings):
     """
     Calculate the minimum, maximum, and average ranks of buggy files in the rankings
@@ -294,3 +303,13 @@ def calculate_effectiveness(buggy_file_rankings):
             best_ranks.append(best_rank)
 
     return (min(best_ranks), max(best_ranks), sum(best_ranks) / len(best_ranks))
+
+def calculate_improvement(gui_hits_at_10, base_hits_at_10):
+    """
+    Calculate relative improvement between base and GUI-enhanced rankings
+
+    Args:
+        gui_hits_at_10: Hits@10 for GUI-enhanced rankings
+        base_hits_at_10: Hits@10 for base rankings
+    """
+    return (gui_hits_at_10 - base_hits_at_10) / base_hits_at_10
