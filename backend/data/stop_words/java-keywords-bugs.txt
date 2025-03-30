@@ -27,6 +27,7 @@ case
 enum
 instanceof
 return
+returns
 transient
 catch
 extends
