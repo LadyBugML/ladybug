@@ -62,7 +62,7 @@ def localize_buggy_files_with_GUI_data(project_path, verbose=False):
     sc_terms = extract_sc_terms(json.dumps(trace))
     gs_terms = extract_gs_terms(json.dumps(trace))
 
-    with open("metrics/preprocessed_data/queries.csv", "a") as f:
+    with open("metrics/preprocessed_data/queries.csv", "w") as f:
         f.write("Type, Terms\n")
 
         f.write(f"SC, {sc_terms}\n")
