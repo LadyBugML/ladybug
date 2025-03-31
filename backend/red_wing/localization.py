@@ -62,19 +62,41 @@ def localize_buggy_files_with_GUI_data(project_path, verbose=False):
     sc_terms = extract_sc_terms(json.dumps(trace))
     gs_terms = extract_gs_terms(json.dumps(trace))
 
+    with open("metrics/preprocessed_data/queries.csv", "a") as f:
+        f.write("Type, Terms\n")
+        f.write(f"SC, {sc_terms}\n")
+        f.write(f"GS, {gs_terms}\n")
+
+
     filtered_files = filter_files(source_code_path)
     preprocessed_files = preprocess_source_code(source_code_path, verbose=verbose)
     preprocessed_bug_report = preprocess_bug_report(bug_report_path, sc_terms, verbose=verbose)
 
     repo_files = to_repo_files(source_code_path)
     corpus = build_corpus(repo_files, sc_terms, None)
+
+    with open("metrics/preprocessed_data/corpus.csv", "a") as f: 
+        f.write("File Path\n")
+        for path in corpus:
+            f.write(f"{path}\n")
+    
     corpus_embeddings = to_corpus_embeddings(preprocessed_files, corpus)
     boosted_files = get_boosted_files(repo_files, gs_terms)
+
+    with open("metrics/preprocessed_data/boosted_files.csv", "a") as f:
+        f.write("File Path\n")
+        for path in boosted_files:
+            f.write(f"{path}\n")
 
     bug_localizer = BugLocalization()
     ranked_files = bug_localizer.rank_files(preprocessed_bug_report, corpus_embeddings)
     reranked_files = reorder_rankings(ranked_files, boosted_files)
     buggy_file_rankings = get_buggy_file_rankings(reranked_files, ground_truth_path, bug_id)
+
+    with open("metrics/preprocessed_data/ranked_list.csv", "a") as f:
+        f.write("Rank, File Path\n")
+        for rank, path in enumerate(reranked_files, start=1):
+            f.write(f"{rank}, {path}\n")
     
     if buggy_file_rankings:
         table = Table(title=f"GUI-Enhanced Buggy File Rankings for Bug {bug_id}")
