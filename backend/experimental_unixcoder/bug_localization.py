@@ -18,6 +18,31 @@ class BugLocalization:
         JAVA_LANGUAGE = Language(tsjava.language())
         self.parser = Parser(JAVA_LANGUAGE)
 
+    def old_chunking_encode_code(self, text, verbose=False):
+        """
+        Encodes long text by splitting it into chunks of roughly 500 characters
+        (before tokenization). Each chunk is tokenized and encoded individually.
+        Returns a list of embeddings (as lists), one for each chunk.
+        """
+        chunk_size = 500  # Split by 500 characters as an example
+        embeddings = []
+
+        chunks = []
+        # Split text into roughly 500-character chunks
+        for i in range(0, len(text), chunk_size):
+            text_chunk = text[i:i + chunk_size]
+            chunks.append(text_chunk)
+            if verbose:
+                print(f"Processing text chunk {i // chunk_size + 1}")  # Debug print
+
+            inputs = self.tokenizer(text_chunk, return_tensors="pt", truncation=True, padding=True, max_length=self.max_tokens).to(self.device)
+            with torch.no_grad():
+                output = self.model(**inputs)[0]  # shape: [1, 256]
+                norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+                embeddings.append(norm_embedding.squeeze(0).tolist())
+        # print(embeddings)
+        return embeddings, chunks
+    
     def encode_code(self, code_str):
         chunks = self.extract_methods_from_java(code_str)
         embeddings = []
@@ -29,7 +54,7 @@ class BugLocalization:
                 norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
                 embeddings.append(norm_embedding.squeeze(0).tolist())
 
-        return embeddings
+        return embeddings, chunks
 
     def encode_bug_report(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(self.device)
@@ -42,30 +67,46 @@ class BugLocalization:
     def extract_methods_from_java(self, source_code):
         tree = self.parser.parse(bytes(source_code, "utf-8"))
         root_node = tree.root_node
-        chunks = []
+        method_texts = []
 
         def walk(node):
             if node.type == "method_declaration":
                 method_text = self.node_text(bytes(source_code, "utf-8"), node)
-                tokens = self.tokenizer(method_text, truncation=False, add_special_tokens=False)["input_ids"]
-                token_len = len(tokens)
-
-                if token_len > self.max_tokens:
-                    stride = self.max_tokens // 2
-                    for i in range(0, token_len, stride):
-                        sub_tokens = tokens[i:i + self.max_tokens]
-                        decoded = self.tokenizer.decode(sub_tokens, skip_special_tokens=True)
-                        chunks.append(decoded)
-                        if len(sub_tokens) < self.max_tokens:
-                            break
-                else:
-                    chunks.append(method_text)
-
+                method_texts.append(method_text)
             for child in node.children:
                 walk(child)
 
         walk(root_node)
-        return chunks
+
+        # === Smart packing implementation ===
+        def smart_pack_methods(methods, tokenizer, max_tokens=512):
+            packed_chunks = []
+            current_chunk = []
+            current_len = 0
+
+            for method in methods:
+                method_tokens = tokenizer(method, truncation=False, add_special_tokens=False)["input_ids"]
+                method_len = len(method_tokens)
+
+                # Optional: skip methods that are too long
+                if method_len > max_tokens:
+                    continue  # or: handle separately if you want
+
+                if current_len + method_len > max_tokens:
+                    packed_chunks.append("\n\n".join(current_chunk))
+                    current_chunk = [method]
+                    current_len = method_len
+                else:
+                    current_chunk.append(method)
+                    current_len += method_len
+
+            if current_chunk:
+                packed_chunks.append("\n\n".join(current_chunk))
+
+            return packed_chunks
+
+        return smart_pack_methods(method_texts, self.tokenizer, max_tokens=self.max_tokens)
+
 
     def node_text(self, source_bytes, node):
         return source_bytes[node.start_byte:node.end_byte].decode('utf-8')
