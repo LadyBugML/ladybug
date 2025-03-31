@@ -598,3 +598,423 @@ best effectiveness, 2
 worst effectiveness, 2
 mean effectiveness, 2.000
 
+running loop 3
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 1/1, 1.00
+hits@1, 0/1, 0.00
+
+map, 0.250
+
+mrr, 0.250
+
+best effectiveness, 4
+worst effectiveness, 4
+mean effectiveness, 4.000
+
+running loop 1
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 1/1, 1.00
+hits@1, 0/1, 0.00
+
+map, 0.200
+
+mrr, 0.200
+
+best effectiveness, 5
+worst effectiveness, 5
+mean effectiveness, 5.000
+
+running loop 2
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 1/1, 1.00
+hits@1, 0/1, 0.00
+
+map, 0.200
+
+mrr, 0.200
+
+best effectiveness, 5
+worst effectiveness, 5
+mean effectiveness, 5.000
+
+running loop 4
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 1/1, 1.00
+hits@1, 0/1, 0.00
+
+map, 0.250
+
+mrr, 0.250
+
+best effectiveness, 4
+worst effectiveness, 4
+mean effectiveness, 4.000
+
+running loop 5
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 1/1, 1.00
+hits@1, 0/1, 0.00
+
+map, 0.200
+
+mrr, 0.200
+
+best effectiveness, 5
+worst effectiveness, 5
+mean effectiveness, 5.000
+
+running loop 3
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.100
+
+mrr, 0.100
+
+best effectiveness, 10
+worst effectiveness, 10
+mean effectiveness, 10.000
+
+running loop 2
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.100
+
+mrr, 0.100
+
+best effectiveness, 10
+worst effectiveness, 10
+mean effectiveness, 10.000
+
+running loop 1
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.091
+
+mrr, 0.091
+
+best effectiveness, 11
+worst effectiveness, 11
+mean effectiveness, 11.000
+
+running loop 5
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.100
+
+mrr, 0.100
+
+best effectiveness, 10
+worst effectiveness, 10
+mean effectiveness, 10.000
+
+running loop 4
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.100
+
+mrr, 0.100
+
+best effectiveness, 10
+worst effectiveness, 10
+mean effectiveness, 10.000
+
+running loop 2
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 89
+worst effectiveness, 89
+mean effectiveness, 89.000
+
+running loop 3
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 91
+worst effectiveness, 91
+mean effectiveness, 91.000
+
+running loop 1
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 90
+worst effectiveness, 90
+mean effectiveness, 90.000
+
+running loop 4
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 89
+worst effectiveness, 89
+mean effectiveness, 89.000
+
+running loop 5
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 91
+worst effectiveness, 91
+mean effectiveness, 91.000
+
+running loop 1
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 95
+worst effectiveness, 95
+mean effectiveness, 95.000
+
+running loop 2
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 92
+worst effectiveness, 92
+mean effectiveness, 92.000
+
+running loop 3
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 93
+worst effectiveness, 93
+mean effectiveness, 93.000
+
+running loop 5
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 92
+worst effectiveness, 92
+mean effectiveness, 92.000
+
+running loop 4
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.011
+
+mrr, 0.011
+
+best effectiveness, 95
+worst effectiveness, 95
+mean effectiveness, 95.000
+
+running loop 2
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.167
+
+mrr, 0.167
+
+best effectiveness, 6
+worst effectiveness, 6
+mean effectiveness, 6.000
+
+running loop 3
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.167
+
+mrr, 0.167
+
+best effectiveness, 6
+worst effectiveness, 6
+mean effectiveness, 6.000
+
+running loop 1
+hits@50, 1/1, 1.00
+hits@25, 1/1, 1.00
+hits@10, 1/1, 1.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.167
+
+mrr, 0.167
+
+best effectiveness, 6
+worst effectiveness, 6
+mean effectiveness, 6.000
+
+running loop 2
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.007
+
+mrr, 0.007
+
+best effectiveness, 138
+worst effectiveness, 138
+mean effectiveness, 138.000
+
+running loop 1
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.007
+
+mrr, 0.007
+
+best effectiveness, 137
+worst effectiveness, 137
+mean effectiveness, 137.000
+
+running loop 3
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.007
+
+mrr, 0.007
+
+best effectiveness, 137
+worst effectiveness, 137
+mean effectiveness, 137.000
+
+running loop 4
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.007
+
+mrr, 0.007
+
+best effectiveness, 138
+worst effectiveness, 138
+mean effectiveness, 138.000
+
+running loop 5
+hits@50, 0/1, 0.00
+hits@25, 0/1, 0.00
+hits@10, 0/1, 0.00
+hits@5, 0/1, 0.00
+hits@1, 0/1, 0.00
+
+map, 0.007
+
+mrr, 0.007
+
+best effectiveness, 137
+worst effectiveness, 137
+mean effectiveness, 137.000
+
