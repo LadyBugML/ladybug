@@ -28,7 +28,7 @@ def preprocess_source_code(root, verbose=True):
             try: 
                 with open(file_path, "r", encoding="utf-8") as f:
                     file_content = f.read()
-                    preprocessed_file_content = preprocessor.preprocess_text(file_content, stop_words_path, verbose=verbose)
+                    preprocessed_file_content = preprocessor.preprocess_text(file_content, stop_words_path, verbose=verbose, bug_report=False)
                     preprocessed_files.append((file_path, file_path.name, preprocessed_file_content))
             except FileNotFoundError:
                 print(f"Error: The source code file at '{file_path}' was not found.")

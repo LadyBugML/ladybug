@@ -15,3 +15,4 @@ backend/embeddings_records.txt
 /backend/repos
 backend/metrics
 /backend/reports/
+/ladybug-env/

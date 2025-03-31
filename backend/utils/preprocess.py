@@ -105,7 +105,7 @@ class Preprocessor:
         # Call the get_pos_tag function to assign the correct POS tag to each token in tokens
         return [lemmatizer.lemmatize(token, Preprocessor.get_pos_tag(token)) for token in tokens]        
     
-    def preprocess_text(self, text, stop_words_path, verbose=True):
+    def preprocess_text(self, text, stop_words_path, verbose=True, bug_report=False):
         """
         Preprocesses input text by
             - Removing Numbers
@@ -123,39 +123,42 @@ class Preprocessor:
             string: preprocessed text
         """
 
-        # Remove all special chars and punctuation from the text
-        text = Preprocessor.remove_special_characters(text)
+        # # Remove all special chars and punctuation from the text
+        # text = Preprocessor.remove_special_characters(text)
 
-        # Tokenize the text
-        tokens = Preprocessor.tokenize_text(text)
+        # # Tokenize the text
+        # tokens = Preprocessor.tokenize_text(text)
 
-        try:
-            # Read stop words from the input
-            with open(stop_words_path) as f:
-                stop_words = set(f.read().splitlines())
-        except FileNotFoundError:
-            print(f"Error: The stop words at '{stop_words_path}' were not found.")
-            return
+        # try:
+        #     # Read stop words from the input
+        #     with open(stop_words_path) as f:
+        #         stop_words = set(f.read().splitlines())
+        # except FileNotFoundError:
+        #     print(f"Error: The stop words at '{stop_words_path}' were not found.")
+        #     return
 
-        # Remove stop words
-        tokens = [token for token in tokens if token not in stop_words]
+        # # Remove stop words
+        # tokens = [token for token in tokens if token not in stop_words]
         
-        # Remove cases
-        tokens = [token.lower() for token in tokens]
+        # # Remove cases
+        # tokens = [token.lower() for token in tokens]
 
-        # Lemmatize the tokens. i.e., running -> run
-        tokens = Preprocessor.lemmatize_tokens(tokens)
+        # # Lemmatize the tokens. i.e., running -> run
+        # tokens = Preprocessor.lemmatize_tokens(tokens)
         
-        # Remove short tokens
-        tokens = [token for token in tokens if len(token) > 2]
+        # # Remove short tokens
+        # tokens = [token for token in tokens if len(token) > 2]
 
-        # Join the tokens into a single string and remove cases
-        preprocessed_text = " ".join(tokens)
+        # # Join the tokens into a single string and remove cases
+        # preprocessed_text = " ".join(tokens)
 
         if verbose:
-            print(preprocessed_text)
+            print(text)
 
-        # Calculate embeddings for preprocessed text
-        preprocessed_text = self.bug_localizer.encode_text(preprocessed_text,verbose=verbose)
+        if not bug_report:
+            # Calculate embeddings for preprocessed text
+            preprocessed_text = self.bug_localizer.encode_code(text)
+        else:
+            preprocessed_text = self.bug_localizer.encode_bug_report(text)
 
         return preprocessed_text
