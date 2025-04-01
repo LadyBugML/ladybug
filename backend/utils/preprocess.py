@@ -105,7 +105,7 @@ class Preprocessor:
         # Call the get_pos_tag function to assign the correct POS tag to each token in tokens
         return [lemmatizer.lemmatize(token, Preprocessor.get_pos_tag(token)) for token in tokens]        
     
-    def preprocess_text(self, text, stop_words_path, verbose=True, bug_report=False):
+    def preprocess_text(self, file_path, text, stop_words_path, verbose=True, bug_report=False):
         """
         Preprocesses input text by
             - Removing Numbers
@@ -155,10 +155,20 @@ class Preprocessor:
         if verbose:
             print(text)
 
+        chunks = []
         if not bug_report:
             # Calculate embeddings for preprocessed text
-            preprocessed_text = self.bug_localizer.encode_code(text)
+            preprocessed_text, chunks = self.bug_localizer.encode_code(text)
         else:
             preprocessed_text = self.bug_localizer.encode_bug_report(text)
+
+        with open("metrics/preprocessed_data/chunking.csv", "a") as f:
+            f.write(f"===== {file_path} =====\n\n")
+            f.write(f"===== ORIGINAL CONTENTS =====\n\n")
+            f.write(f"{text}\n\n")
+
+            for i, chunk in enumerate(chunks, 1):
+                f.write(f"===== CHUNK {i}/{len(chunks)} =====\n\n")
+                f.write(f"{chunk}\n\n")
 
         return preprocessed_text
