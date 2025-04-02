@@ -1,18 +1,28 @@
 import argparse
 import datetime
 import os
+from nltk import find, pr
 from rich.progress import Progress, BarColumn, TextColumn
 from rich.console import Console
 from rich.table import Table
-from red_wing.localization import collect_repos, localize_buggy_files_with_GUI_data, \
-    localize_buggy_files_without_GUI_data, hits_at_k, calculate_map, calculate_mrr, calculate_effectiveness, \
-    calculate_improvement
+from red_wing.localization import (
+    collect_repos,
+    localize_buggy_files_with_GUI_data,
+    localize_buggy_files_without_GUI_data,
+    hits_at_k,
+    calculate_map,
+    calculate_mrr,
+    calculate_effectiveness,
+    calculate_improvement,
+)
 import inquirer
 import os
 from types import SimpleNamespace
+from transformers import AutoTokenizer, AutoModel
+from experimental_unixcoder.bug_localization import BugLocalization
 
 console = Console()
-
+selected_model = None
 # ANSI escape codes for coloring output
 RESET = "\033[0m"
 BOLD = "\033[1m"
@@ -21,78 +31,118 @@ BLUE = "\033[94m"
 YELLOW = "\033[93m"
 RED = "\033[91m"
 
+availableModels = {}
+huggingFaceModels = [
+    "Salesforce/codet5p-110m-embedding",
+    "microsoft/unixcoder-base",
+    "bigcode/starcoder2-3b",
+]
 
 def parse_cli_arguments():
+    global selected_model
     # Define the cache file path in the user's home directory
-    cache_file = os.path.expanduser('~/.red_wing_last_repo_home')
+    cache_file = os.path.expanduser("~/.red_wing_last_repo_home")
     default_repo_home = None
     if os.path.exists(cache_file):
-        with open(cache_file, 'r') as f:
+        with open(cache_file, "r") as f:
             default_repo_home = f.read().strip()
 
-    # First, ask common questions: repo home path, verbose, mode, and iteration mode.
+    # ask common questions: repo home path, verbose, mode, and iteration mode.
     common_questions = [
-        inquirer.Text('path', message="Enter the repo home path", default=default_repo_home),
-        inquirer.Confirm('v', message="Enable verbose output?", default=False),
-        inquirer.List('mode', message="Select localization mode", choices=[
-            ('Run enhanced localization (default)', 'default'),
-            ('Calculate relative improvement between base and GUI-enhanced rankings', 'm'),
-            ('Run base localization', 'b')
-        ]),
-        inquirer.List('iteration', message="Select iteration mode", choices=[
-            ('Iterate over all repos', 'a'),
-            ('Select number of repos to randomly select', 'r'),
-            ('Select one or more repo IDs', 'i')
-        ])
+        inquirer.Text(
+            "path", message="Enter the repo home path", default=default_repo_home
+        ),
+        inquirer.Confirm("v", message="Enable verbose output?", default=False),
+        inquirer.List(
+            "mode",
+            message="Select localization mode",
+            choices=[
+                ("Run enhanced localization (default)", "default"),
+                (
+                    "Calculate relative improvement between base and GUI-enhanced rankings",
+                    "m",
+                ),
+                ("Run base localization", "b"),
+            ],
+        ),
+        inquirer.List(
+            "iteration",
+            message="Select iteration mode",
+            choices=[
+                ("Iterate over all repos", "a"),
+                ("Select number of repos to randomly select", "r"),
+                ("Select one or more repo IDs", "i"),
+            ],
+        ),
     ]
     answers = inquirer.prompt(common_questions)
 
     # Cache the repo home path for future runs.
-    with open(cache_file, 'w') as f:
-        f.write(answers['path'])
+    with open(cache_file, "w") as f:
+        f.write(answers["path"])
 
-    # Branch: ask additional questions based on the selected iteration mode.
-    if answers['iteration'] == 'r':
+    # ask additional questions based on the selected iteration mode.
+    if answers["iteration"] == "r":
         additional_questions = [
-            inquirer.Text('repo_count', message="Enter number of repos to randomly select")
+            inquirer.Text(
+                "repo_count", message="Enter number of repos to randomly select"
+            )
         ]
         extra_answers = inquirer.prompt(additional_questions)
         answers.update(extra_answers)
-        answers['repo_ids'] = None
-    elif answers['iteration'] == 'i':
+        answers["repo_ids"] = None
+    elif answers["iteration"] == "i":
         additional_questions = [
-            inquirer.Text('repo_ids', message="Enter one or more repo IDs separated by spaces")
+            inquirer.Text(
+                "repo_ids", message="Enter one or more repo IDs separated by spaces"
+            )
         ]
         extra_answers = inquirer.prompt(additional_questions)
         answers.update(extra_answers)
-        answers['repo_count'] = None
+        answers["repo_count"] = None
     else:
-        answers['repo_count'] = None
-        answers['repo_ids'] = None
+        answers["repo_count"] = None
+        answers["repo_ids"] = None
 
-    # Finally, ask for the number of loops.
+    # ask for the number of loops.
     loop_question = [
-        inquirer.Text('loop', message="Enter number of loops", default='1')
+        inquirer.Text("loop", message="Enter number of loops", default="1")
     ]
     loop_answer = inquirer.prompt(loop_question)
     answers.update(loop_answer)
 
-    # Process mode selection: set flags for improvement or base mode.
-    m = (answers['mode'] == 'm')
-    b = (answers['mode'] == 'b')
-    loop = int(answers['loop'])
-    repo_count = int(answers['repo_count']) if answers.get('repo_count') else None
-    repo_ids = [int(x) for x in answers['repo_ids'].split()] if answers.get('repo_ids') else None
+    # ask for the model selection.
+    model_question = [
+        inquirer.List(
+            "model",
+            message="Select a model",
+            choices=[(model, model) for model in huggingFaceModels],
+        )
+    ]
+    model_answer = inquirer.prompt(model_question)
+    answers.update(model_answer)
 
+    # Process mode selection: set flags for improvement or base mode.
+    m = answers["mode"] == "m"
+    b = answers["mode"] == "b"
+    loop = int(answers["loop"])
+    repo_count = int(answers["repo_count"]) if answers.get("repo_count") else None
+    repo_ids = (
+        [int(x) for x in answers["repo_ids"].split()]
+        if answers.get("repo_ids")
+        else None
+    )
+    selected_model = answers["model"]
+    BugLocalization(selected_model)
     return SimpleNamespace(
-        path=answers['path'],
-        v=answers['v'],
+        path=answers["path"],
+        v=answers["v"],
         m=m,
         b=b,
-        a=(answers['iteration'] == 'a'),
+        a=(answers["iteration"] == "a"),
         repo_count=repo_count,
         repo_ids=repo_ids,
-        loop=loop
+        loop=loop,
     )
 
 
