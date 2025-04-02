@@ -63,7 +63,7 @@ def main():
     repo_home = args.path
     improvement = args.m
     base = args.b
-    loop_count = args.loop  # new flag
+    loop_count = args.loop
 
     if not os.path.isdir(repo_home):
         console.print(f"\nError: The provided repo home path does not exist: {repo_home}\n")

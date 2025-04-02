@@ -5,12 +5,22 @@ import tree_sitter_java as tsjava
 
 
 class BugLocalization:
-    def __init__(self, max_tokens=512, top_k=1):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained("Salesforce/codet5p-110m-embedding", trust_remote_code=True)
-        self.model = AutoModel.from_pretrained("Salesforce/codet5p-110m-embedding", trust_remote_code=True).to(self.device)
-        self.model.eval()
+    _instance = None  # Class variable to hold the single instance
 
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(BugLocalization, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self,model="microsoft/unixcoder-base", max_tokens=512, top_k=1):
+        if hasattr(self, 'initialized'):
+            return  # Prevent re-initialization
+        self.initialized = True  # Mark as initialized
+        # Initialize the model and tokenizer
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
+        self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
+        self.model.eval()
         self.max_tokens = max_tokens
         self.top_k = top_k
 
@@ -28,7 +38,6 @@ class BugLocalization:
                 output = self.model(**inputs)[0]  # shape: [1, 256]
                 norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
                 embeddings.append(norm_embedding.squeeze(0).tolist())
-
         return embeddings
 
     def encode_bug_report(self, text):
