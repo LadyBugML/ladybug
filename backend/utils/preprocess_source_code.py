@@ -1,7 +1,7 @@
 from pathlib import Path
 from utils.preprocess import Preprocessor
 
-def preprocess_source_code(root, verbose=True):
+def preprocess_source_code(root, verbose=False):
     """
     Preprocesses all source code files in a source code repository. Assumes all files contained
     in the root directory have had non-.java files filtered out.

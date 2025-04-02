@@ -14,7 +14,7 @@ class BugLocalization:
 
     def __init__(self,model="microsoft/unixcoder-base", max_tokens=512, top_k=1):
         if hasattr(self, 'initialized'):
-            return  # Prevent re-initialization
+            return
         self.initialized = True  # Mark as initialized
         # Initialize the model and tokenizer
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

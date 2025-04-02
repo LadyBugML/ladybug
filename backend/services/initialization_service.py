@@ -8,7 +8,6 @@ from utils.preprocess_source_code import preprocess_source_code
 from utils.file_utils import clean_embedding_paths_for_db, post_process_cleanup
 from utils.filter import filter_files
 from utils.git_utils import clone_repo, extract_and_validate_repo_info
-
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +16,6 @@ def initialize(data):
     comment_id = data.get('comment_id', -1)
     repo_info = extract_and_validate_repo_info(repo_data)
     messenger = ProbotMessenger(repo_info, comment_id)
-
     messenger.send("init_start")
     try:
         process_and_store_embeddings(repo_info, messenger)
@@ -52,8 +50,8 @@ def process_and_store_embeddings(repo_info, messenger):
     # Preprocess the source code files
     preprocessed_files = preprocess_source_code(repo_dir)
     messenger.send("embeddings_calculated")
-    for file in preprocessed_files:
-        logger.info(f"Preprocessed file: {file}")
+    # for file in preprocessed_files:
+    #     logger.info(f"Preprocessed file: {file}")
 
     # Clean data
     clean_paths = clean_embedding_paths_for_db(preprocessed_files, repo_dir)

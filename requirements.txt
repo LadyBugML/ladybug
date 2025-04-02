@@ -45,6 +45,8 @@ pytest==8.3.3
 python-dotenv==1.0.1
 pytz==2025.1
 PyYAML==6.0.2
+tree-sitter==0.24.0
+tree-sitter-java==0.23.5
 readchar==4.2.1
 regex==2024.9.11
 requests==2.32.3

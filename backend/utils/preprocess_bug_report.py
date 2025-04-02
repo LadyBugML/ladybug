@@ -3,7 +3,7 @@ from utils.preprocess import Preprocessor
 from pathlib import Path
 
 # Main driver method for preprocessing bug reports
-def preprocess_bug_report(bug_report_path: str, sc_terms: list[str], verbose=True):
+def preprocess_bug_report(bug_report_path: str, sc_terms: list[str], verbose=False):
     """
     Preprocesses bug reports and applies query reformulation (MVP)
 
