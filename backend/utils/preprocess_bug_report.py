@@ -14,7 +14,6 @@ def preprocess_bug_report(bug_report_path: str, sc_terms: list[str], verbose=Fal
         String: The preprocessed bug report
     """
     preprocessor = Preprocessor()
-    stop_words_path = Path(__file__).parent / "../data/stop_words/java-keywords-bugs.txt"
 
     # Put bug report content into a string
     try:
@@ -33,7 +32,7 @@ def preprocess_bug_report(bug_report_path: str, sc_terms: list[str], verbose=Fal
         bug_report_string += " " + sc_term
 
     # Run bug report through preprocessor
-    preprocessed_bug_report = preprocessor.preprocess_text(bug_report_string, stop_words_path,verbose=verbose, bug_report=True)
+    preprocessed_bug_report = preprocessor.preprocess_text(bug_report_string, verbose=verbose, bug_report=True)
 
     # Return preprocessed bug report as a string
     return preprocessed_bug_report
