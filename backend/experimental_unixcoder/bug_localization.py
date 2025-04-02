@@ -12,61 +12,61 @@ class BugLocalization:
             cls._instance = super(BugLocalization, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self,model="microsoft/unixcoder-base", max_tokens=512, top_k=1):
+    def __init__(self, model="microsoft/unixcoder-base", max_tokens=512, top_k=1):
         if hasattr(self, 'initialized'):
             return
-        self.initialized = True  # Mark as initialized
-        # Initialize the model and tokenizer
+        self.initialized = True
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
-        self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
+        self.is_unixcoder = model.lower() == "microsoft/unixcoder-base"
+
+        if self.is_unixcoder:
+            print("Loading UnixCoder model...")
+            self.tokenizer = AutoTokenizer.from_pretrained(model)
+            self.model = AutoModel.from_pretrained(model).to(self.device)
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
+            self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
+
         self.model.eval()
         self.max_tokens = max_tokens
         self.top_k = top_k
 
-        # Tree-sitter for Java
         JAVA_LANGUAGE = Language(tsjava.language())
         self.parser = Parser(JAVA_LANGUAGE)
-    
+
     def encode_code(self, code_str):
-        """
-        Encodes source code into embeddings using the model.
-
-        Args:
-            code_str (str): The source code to encode.
-
-        Returns:
-            list: A list of normalized embeddings for the code chunks.
-        """
-
         chunks = self.extract_methods_from_java(code_str)
         embeddings = []
 
         for chunk in chunks:
-            inputs = self.tokenizer(chunk, return_tensors="pt", truncation=True, padding=True, max_length=self.max_tokens).to(self.device)
+            inputs = self.tokenizer(chunk, return_tensors="pt", truncation=True, padding=True,
+                                    max_length=self.max_tokens).to(self.device)
             with torch.no_grad():
-                output = self.model(**inputs)[0]  # shape: [1, 256]
-                norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+                if self.is_unixcoder:
+                    outputs = self.model(**inputs)
+                    cls_embedding = outputs[1]
+                    norm_embedding = torch.nn.functional.normalize(cls_embedding, p=2, dim=-1)
+                else:
+                    output = self.model(**inputs)[0]
+                    norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+
                 embeddings.append(norm_embedding.squeeze(0).tolist())
+
         return embeddings
 
     def encode_bug_report(self, text):
-        """
-        Encodes a bug report into an embedding using the model.
-
-        Args:
-            text (str): The bug report text to encode.
-
-        Returns:
-            list: A normalized embedding for the bug report.
-        """
-
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(self.device)
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True,
+                                max_length=self.max_tokens).to(self.device)
         with torch.no_grad():
-            output = self.model(**inputs)[0]
-            norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
-            return [norm_embedding.squeeze(0).tolist()]
+            if self.is_unixcoder:
+                outputs = self.model(**inputs)
+                cls_embedding = outputs[1]
+                norm_embedding = torch.nn.functional.normalize(cls_embedding, p=2, dim=-1)
+            else:
+                output = self.model(**inputs)[0]
+                norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
 
+            return [norm_embedding.squeeze(0).tolist()]
 
     def extract_methods_from_java(self, source_code):
         """
@@ -86,7 +86,7 @@ class BugLocalization:
         def walk(node):
             if node.type == "method_declaration":
                 method_text = self.node_text(bytes(source_code, "utf-8"), node)
-                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False)["input_ids"]
+                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False,max_length=self.max_tokens)["input_ids"]
                 token_len = len(tokens)
 
                 if token_len > self.max_tokens:
