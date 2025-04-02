@@ -105,7 +105,7 @@ class Preprocessor:
         # Call the get_pos_tag function to assign the correct POS tag to each token in tokens
         return [lemmatizer.lemmatize(token, Preprocessor.get_pos_tag(token)) for token in tokens]        
     
-    def preprocess_text(self, file_path, text, stop_words_path, verbose=True, bug_report=False):
+    def preprocess_text(self, text, verbose=True, bug_report=False):
         """
         Preprocesses input text by
             - Removing Numbers
@@ -123,52 +123,13 @@ class Preprocessor:
             string: preprocessed text
         """
 
-        # # Remove all special chars and punctuation from the text
-        # text = Preprocessor.remove_special_characters(text)
-
-        # # Tokenize the text
-        # tokens = Preprocessor.tokenize_text(text)
-
-        # try:
-        #     # Read stop words from the input
-        #     with open(stop_words_path) as f:
-        #         stop_words = set(f.read().splitlines())
-        # except FileNotFoundError:
-        #     print(f"Error: The stop words at '{stop_words_path}' were not found.")
-        #     return
-
-        # # Remove stop words
-        # tokens = [token for token in tokens if token not in stop_words]
-        
-        # # Remove cases
-        # tokens = [token.lower() for token in tokens]
-
-        # # Lemmatize the tokens. i.e., running -> run
-        # tokens = Preprocessor.lemmatize_tokens(tokens)
-        
-        # # Remove short tokens
-        # tokens = [token for token in tokens if len(token) > 2]
-
-        # # Join the tokens into a single string and remove cases
-        # preprocessed_text = " ".join(tokens)
-
         if verbose:
             print(text)
 
-        chunks = []
         if not bug_report:
             # Calculate embeddings for preprocessed text
-            preprocessed_text, chunks = self.bug_localizer.encode_code(text)
+            preprocessed_text = self.bug_localizer.encode_code(text)
         else:
             preprocessed_text = self.bug_localizer.encode_bug_report(text)
-
-        with open("metrics/preprocessed_data/chunking.csv", "a") as f:
-            f.write(f"===== {file_path} =====\n\n")
-            f.write(f"===== ORIGINAL CONTENTS =====\n\n")
-            f.write(f"{text}\n\n")
-
-            for i, chunk in enumerate(chunks, 1):
-                f.write(f"===== CHUNK {i}/{len(chunks)} =====\n\n")
-                f.write(f"{chunk}\n\n")
 
         return preprocessed_text
