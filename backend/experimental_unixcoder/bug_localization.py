@@ -47,7 +47,7 @@ class BugLocalization:
         def walk(node):
             if node.type == "method_declaration":
                 method_text = self.node_text(bytes(source_code, "utf-8"), node)
-                tokens = self.tokenizer(method_text, truncation=False, add_special_tokens=False)["input_ids"]
+                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False)["input_ids"]
                 token_len = len(tokens)
 
                 if token_len > self.max_tokens:
