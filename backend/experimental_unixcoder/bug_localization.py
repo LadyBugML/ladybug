@@ -20,11 +20,11 @@ class BugLocalization:
         self.is_unixcoder = model.lower() == "microsoft/unixcoder-base"
 
         if self.is_unixcoder:
-            print("Loading UnixCoder model...")
+            print(f"{'\033[91m'}Loading UnixCoder model...{'\033[0m'}")
             self.tokenizer = AutoTokenizer.from_pretrained(model)
             self.model = AutoModel.from_pretrained(model).to(self.device)
         else:
-            print("Loading Custom model...")
+            print(f"{'\033[92m'}Loading Custom model...{'\033[0m'}")
             self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
             self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
 

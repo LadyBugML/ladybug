@@ -9,6 +9,7 @@ from red_wing.localization import collect_repos
 from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics, output_metrics_with_improvement, \
     output_big_metrics, output_big_metrics_with_improvement
 import datetime
+from experimental_unixcoder.bug_localization import BugLocalization
 
 console = Console()
 
@@ -37,8 +38,9 @@ o888o  o888o `Y8bod8P' `Y8bod88P"            `8'      `8'       o888o o888o o888
 """
     print(banner)
 
-def run_loop(loop_number, repo_paths, verbose, improvement, base, filename):
+def run_loop(loop_number, repo_paths, verbose, improvement, base, filename,model):
     # This function runs one loop iteration
+    BugLocalization(model=model)
     if improvement:
         (all_buggy_file_rankings_gui, best_rankings_gui) = process_repos(repo_paths, verbose, True)  # with gui
         (all_buggy_file_rankings_base, best_rankings_base) = process_repos(repo_paths, verbose, False)  # without gui
@@ -107,7 +109,7 @@ def main():
             for i in range(1, loop_count + 1):
                 console.print(f"Submitting loop {i}")
                 # Pass the computed metrics_filename to each loop iteration
-                futures.append(executor.submit(run_loop, i, repo_paths, verbose, improvement, base, metrics_filename))
+                futures.append(executor.submit(run_loop, i, repo_paths, verbose, improvement, base, metrics_filename, model))
             for future in as_completed(futures):
                 result = future.result()
                 console.print(result)
