@@ -8,6 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from red_wing.localization import collect_repos
 from red_wing.cli_helpers import parse_cli_arguments, process_repos, output_metrics, output_metrics_with_improvement, \
     output_big_metrics, output_big_metrics_with_improvement
+import datetime
 
 console = Console()
 
@@ -63,7 +64,6 @@ def main():
     base = args.b
     loop_count = args.loop
     model = args.model
-    repo_count = args.repo_count
 
     cleaned_model = model.replace("/", "_").replace("-", "_")
 
@@ -89,9 +89,9 @@ def main():
     console.print(repo_table)
     console.print("\n")
 
-    import datetime
     timestamp = datetime.datetime.now().strftime("%m%d-%H%M")
-    metrics_filename = f"metrics/big/{cleaned_model}-{repo_count}repos-{loop_count}loops"
+    repo_val = (args.repo_count if args.repo_count else "all")
+    metrics_filename = f"metrics/big/{cleaned_model}-{repo_val}repos-{loop_count}loops"
     if improvement:
         metrics_filename += "-improvement"
     if base:
