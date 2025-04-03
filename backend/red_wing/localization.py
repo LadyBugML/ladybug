@@ -334,4 +334,6 @@ def calculate_improvement(gui_hits_at_10, base_hits_at_10):
         gui_hits_at_10: Hits@10 for GUI-enhanced rankings
         base_hits_at_10: Hits@10 for base rankings
     """
+    if base_hits_at_10 == 0:
+        return 0
     return (gui_hits_at_10 - base_hits_at_10) / base_hits_at_10

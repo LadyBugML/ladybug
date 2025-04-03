@@ -133,7 +133,7 @@ def parse_cli_arguments():
         else None
     )
     selected_model = answers["model"]
-    BugLocalization(selected_model)
+    BugLocalization(model = selected_model)
     return SimpleNamespace(
         path=answers["path"],
         v=answers["v"],
@@ -143,6 +143,7 @@ def parse_cli_arguments():
         repo_count=repo_count,
         repo_ids=repo_ids,
         loop=loop,
+        model=selected_model,
     )
 
 
@@ -283,9 +284,7 @@ def output_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement: 
     console.print("\n")
     console.print(effectiveness_table)
 
-
-# New function to output metrics to bigMetrics.csv without rankings details
-def output_big_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement, loop_number):
+def output_big_metrics(all_buggy_file_rankings, best_rankings_per_bug, improvement, loop_number, filename):
     total_bugs = len(best_rankings_per_bug)
     hits_50 = hits_at_k(50, best_rankings_per_bug)
     hits_25 = hits_at_k(25, best_rankings_per_bug)
@@ -302,7 +301,8 @@ def output_big_metrics(all_buggy_file_rankings, best_rankings_per_bug, improveme
     mrr_value = calculate_mrr(all_buggy_file_rankings)
     effectiveness = calculate_effectiveness(all_buggy_file_rankings)
 
-    with open("bigMetrics.csv", "a") as f:
+    # Use the dynamic filename instead of "bigMetrics.csv"
+    with open(filename, "a") as f:
         f.write(f"running loop {loop_number}\n")
         f.write(f"hits@50, {hits_50}/{total_bugs}, {hits_at_50_ratio:.2f}\n")
         f.write(f"hits@25, {hits_25}/{total_bugs}, {hits_at_25_ratio:.2f}\n")
@@ -322,10 +322,8 @@ def output_big_metrics(all_buggy_file_rankings, best_rankings_per_bug, improveme
             f.write(f"relative improvement, {improvement:.3f}\n")
             f.write("\n")
 
-
-# New function to output metrics with improvement to bigMetrics.csv without rankings details
 def output_big_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankings_gui, best_rankings_base,
-                                        loop_number):
+                                        loop_number, filename):
     gui_hits_at_10 = hits_at_k(10, best_rankings_gui)
     base_hits_at_10 = hits_at_k(10, best_rankings_base)
     improvement_value = calculate_improvement(gui_hits_at_10, base_hits_at_10)
@@ -346,7 +344,8 @@ def output_big_metrics_with_improvement(all_buggy_file_rankings_gui, best_rankin
     mrr_value = calculate_mrr(all_buggy_file_rankings_gui)
     effectiveness = calculate_effectiveness(all_buggy_file_rankings_gui)
 
-    with open("bigMetrics.csv", "a") as f:
+    # Use the dynamic filename instead of "bigMetrics.csv"
+    with open(filename, "a") as f:
         f.write(f"running loop {loop_number}\n")
         f.write(f"hits@50, {hits_50}/{total_bugs}, {hits_at_50_ratio:.2f}\n")
         f.write(f"hits@25, {hits_25}/{total_bugs}, {hits_at_25_ratio:.2f}\n")

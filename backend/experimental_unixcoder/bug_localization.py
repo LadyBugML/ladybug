@@ -24,6 +24,7 @@ class BugLocalization:
             self.tokenizer = AutoTokenizer.from_pretrained(model)
             self.model = AutoModel.from_pretrained(model).to(self.device)
         else:
+            print("Loading Custom model...")
             self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
             self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
 
