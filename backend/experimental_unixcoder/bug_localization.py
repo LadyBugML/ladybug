@@ -1,4 +1,7 @@
 import torch
+from transformers import AutoTokenizer, AutoModel
+from tree_sitter import Language, Parser
+import tree_sitter_java as tsjava
 
 try:
     from experimental_unixcoder.unixcoder import UniXcoder  # Try live version
@@ -7,43 +10,120 @@ except ImportError:
 
 
 class BugLocalization:
-    def __init__(self):
-        # Set up device and initialize the UniXcoder model
+    def __init__(self, max_tokens=512, top_k=1):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # print("CUDA is available" if torch.cuda.is_available() else "CUDA is not available")
-        self.model = UniXcoder("microsoft/unixcoder-base")
-        self.model.to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/unixcoder-base")
+        self.model = AutoModel.from_pretrained("microsoft/unixcoder-base").to(self.device)
 
-        # Encoding for Long Texts
-    def encode_text(self, text, verbose=False):
+        self.model.eval()
+        self.max_tokens = max_tokens
+        self.top_k = top_k
+
+        # Initialize tree-sitter
+        JAVA_LANGUAGE = Language(tsjava.language())
+        self.parser = Parser(JAVA_LANGUAGE)
+
+
+    def encode_code(self, code_str, verbose):
         """
-        Encodes long text by splitting it into chunks of roughly 500 characters
-        (before tokenization). Each chunk is tokenized and encoded individually.
-        Returns a list of embeddings (as lists), one for each chunk.
+        Encodes source code into embeddings using the model.
+
+        Args:
+            code_str (str): The source code to encode.
+
+        Returns:
+            list: A list of normalized embeddings for the code chunks.
         """
-        chunk_size = 500  # Split by 500 characters as an example
+
+        chunks = self.extract_methods_from_java(code_str)
+
+        if verbose:
+            for i, chunk in enumerate(chunks, 1):
+                print(f"===== CHUNK {i}/{len(chunks)} =====\n")
+                print(f"{chunk}\n")
+        
         embeddings = []
+        for chunk in chunks:
+            inputs = self.tokenizer(chunk, return_tensors="pt", truncation=True, padding=True, max_length=self.max_tokens).to(self.device)
+            with torch.no_grad():
+                output = self.model(**inputs)[0]  # shape: [1, 256]
+                norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+                embeddings.append(norm_embedding.squeeze(0).tolist())
 
-        # Split text into roughly 500-character chunks
-        for i in range(0, len(text), chunk_size):
-            text_chunk = text[i:i + chunk_size]
-            if verbose:
-                print(f"Processing text chunk {i // chunk_size + 1}")  # Debug print
-
-            # Tokenize the chunk
-            tokens = self.model.tokenize([text_chunk], mode="<encoder-only>")[0]
-            source_ids = torch.tensor([tokens]).to(self.device)
-            
-            # Get model output
-            try:
-                _, embedding = self.model(source_ids)
-                norm_embedding = torch.nn.functional.normalize(embedding, p=2, dim=1)
-                embeddings.append(norm_embedding.tolist())  # Store normalized embedding as list
-            except Exception as e:
-                print(f"Error processing chunk {i // chunk_size + 1}: {e}")
-                continue
-        # print(embeddings)
         return embeddings
+
+
+    def encode_bug_report(self, text):
+        """
+        Encodes a bug report into an embedding using the model.
+
+        Args:
+            text (str): The bug report text to encode.
+
+        Returns:
+            list: A normalized embedding for the bug report.
+        """
+
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(self.device)
+        with torch.no_grad():
+            output = self.model(**inputs)[0]
+            norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+            return [norm_embedding.squeeze(0).tolist()]
+
+
+    def extract_methods_from_java(self, source_code):
+        """
+        Extracts method declarations from Java source code and splits them into chunks.
+
+        Args:
+            source_code (str): The Java source code to process.
+
+        Returns:
+            list: A list of method chunks extracted from the source code.
+        """
+
+        tree = self.parser.parse(bytes(source_code, "utf-8"))
+        root_node = tree.root_node
+        chunks = []
+
+        def walk(node):
+            if node.type == "method_declaration":
+                method_text = self.node_text(bytes(source_code, "utf-8"), node)
+                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False)["input_ids"]
+                token_len = len(tokens)
+
+                if token_len > self.max_tokens:
+                    stride = self.max_tokens // 2
+                    for i in range(0, token_len, stride):
+                        sub_tokens = tokens[i:i + self.max_tokens]
+                        decoded = self.tokenizer.decode(sub_tokens, skip_special_tokens=True)
+                        chunks.append(decoded)
+                        if len(sub_tokens) < self.max_tokens:
+                            break
+                else:
+                    chunks.append(method_text)
+
+            for child in node.children:
+                walk(child)
+
+        walk(root_node)
+
+        return chunks
+
+
+    def node_text(self, source_bytes, node):
+        """
+        Extracts the text corresponding to a tree-sitter node.
+
+        Args:
+            source_bytes (bytes): The source code as bytes.
+            node (tree_sitter.Node): The tree-sitter node.
+
+        Returns:
+            str: The text corresponding to the node.
+        """
+
+        return source_bytes[node.start_byte:node.end_byte].decode('utf-8')
 
 
     # File Ranking for Bug Localization
