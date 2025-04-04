@@ -1,4 +1,5 @@
 import torch
+from transformers import AutoTokenizer, AutoModel
 from tree_sitter import Language, Parser
 import tree_sitter_java as tsjava
 
@@ -9,19 +10,21 @@ except ImportError:
 
 
 class BugLocalization:
-    def __init__(self):
-        # Set up device and initialize the UniXcoder model
+    def __init__(self, max_tokens=512, top_k=1):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # print("CUDA is available" if torch.cuda.is_available() else "CUDA is not available")
-        self.model = UniXcoder("microsoft/unixcoder-base")
-        self.model.to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/unixcoder-base")
+        self.model = AutoModel.from_pretrained("microsoft/unixcoder-base").to(self.device)
+
+        self.model.eval()
+        self.max_tokens = max_tokens
+        self.top_k = top_k
 
         # Initialize tree-sitter
         JAVA_LANGUAGE = Language(tsjava.language())
         self.parser = Parser(JAVA_LANGUAGE)
 
 
-    def encode_code(self, code_str):
+    def encode_code(self, code_str, verbose):
         """
         Encodes source code into embeddings using the model.
 
@@ -33,8 +36,13 @@ class BugLocalization:
         """
 
         chunks = self.extract_methods_from_java(code_str)
-        embeddings = []
 
+        if verbose:
+            for i, chunk in enumerate(chunks, 1):
+                print(f"===== CHUNK {i}/{len(chunks)} =====\n")
+                print(f"{chunk}\n")
+        
+        embeddings = []
         for chunk in chunks:
             inputs = self.tokenizer(chunk, return_tensors="pt", truncation=True, padding=True, max_length=self.max_tokens).to(self.device)
             with torch.no_grad():
