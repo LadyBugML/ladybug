@@ -105,7 +105,7 @@ class Preprocessor:
         # Call the get_pos_tag function to assign the correct POS tag to each token in tokens
         return [lemmatizer.lemmatize(token, Preprocessor.get_pos_tag(token)) for token in tokens]        
     
-    def preprocess_text(self, text, stop_words_path, verbose=True):
+    def preprocess_text(self, text, stop_words_path, verbose=True, is_bug_report=False):
         """
         Preprocesses input text by
             - Removing Numbers
@@ -156,6 +156,9 @@ class Preprocessor:
             print(preprocessed_text)
 
         # Calculate embeddings for preprocessed text
-        preprocessed_text = self.bug_localizer.encode_text(preprocessed_text,verbose=verbose)
+        if is_bug_report:
+            preprocessed_text = self.bug_localizer.encode_bug_report(preprocessed_text)
+        else:  
+            preprocessed_text = self.bug_localizer.encode_code(preprocessed_text)
 
         return preprocessed_text
