@@ -10,10 +10,28 @@ except ImportError:
 
 
 class BugLocalization:
-    def __init__(self, max_tokens=512, top_k=1):
+    _instance = None  # Class variable to hold the single instance
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(BugLocalization, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, model="microsoft/unixcoder-base", max_tokens=512, top_k=1):
+        if hasattr(self, 'initialized'):
+            return
+        self.initialized = True
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/unixcoder-base")
-        self.model = AutoModel.from_pretrained("microsoft/unixcoder-base").to(self.device)
+        self.is_unixcoder = model.lower() == "microsoft/unixcoder-base"
+
+        if self.is_unixcoder:
+            print(f"{'\033[91m'}Loading UnixCoder model...{'\033[0m'}")
+            self.tokenizer = AutoTokenizer.from_pretrained(model)
+            self.model = AutoModel.from_pretrained(model).to(self.device)
+        else:
+            print(f"{'\033[92m'}Loading Custom model...{'\033[0m'}")
+            self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
+            self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
 
         self.model.eval()
         self.max_tokens = max_tokens
@@ -41,13 +59,21 @@ class BugLocalization:
             for i, chunk in enumerate(chunks, 1):
                 print(f"===== CHUNK {i}/{len(chunks)} =====\n")
                 print(f"{chunk}\n")
-        
+
         embeddings = []
+
         for chunk in chunks:
-            inputs = self.tokenizer(chunk, return_tensors="pt", truncation=True, padding=True, max_length=self.max_tokens).to(self.device)
+            inputs = self.tokenizer(chunk, return_tensors="pt", truncation=True, padding=True,
+                                    max_length=self.max_tokens).to(self.device)
             with torch.no_grad():
-                output = self.model(**inputs)[0]  # shape: [1, 256]
-                norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+                if self.is_unixcoder:
+                    outputs = self.model(**inputs)
+                    cls_embedding = outputs[1]
+                    norm_embedding = torch.nn.functional.normalize(cls_embedding, p=2, dim=-1)
+                else:
+                    output = self.model(**inputs)[0]
+                    norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+
                 embeddings.append(norm_embedding.squeeze(0).tolist())
 
         return embeddings
@@ -64,10 +90,17 @@ class BugLocalization:
             list: A normalized embedding for the bug report.
         """
 
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(self.device)
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True,
+                                max_length=self.max_tokens).to(self.device)
         with torch.no_grad():
-            output = self.model(**inputs)[0]
-            norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+            if self.is_unixcoder:
+                outputs = self.model(**inputs)
+                cls_embedding = outputs[1]
+                norm_embedding = torch.nn.functional.normalize(cls_embedding, p=2, dim=-1)
+            else:
+                output = self.model(**inputs)[0]
+                norm_embedding = torch.nn.functional.normalize(output, p=2, dim=-1)
+
             return [norm_embedding.squeeze(0).tolist()]
 
 
@@ -89,7 +122,7 @@ class BugLocalization:
         def walk(node):
             if node.type == "method_declaration":
                 method_text = self.node_text(bytes(source_code, "utf-8"), node)
-                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False)["input_ids"]
+                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False,max_length=self.max_tokens)["input_ids"]
                 token_len = len(tokens)
 
                 if token_len > self.max_tokens:
