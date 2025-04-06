@@ -25,14 +25,15 @@ class BugLocalization:
         self.is_unixcoder = model.lower() == "microsoft/unixcoder-base"
 
         if self.is_unixcoder:
-            print(f"{'\033[91m'}Loading UnixCoder model...{'\033[0m'}")
+            print("\033[91mLoading UnixCoder model...\033[0m")
             self.tokenizer = AutoTokenizer.from_pretrained(model)
             self.model = AutoModel.from_pretrained(model).to(self.device)
         else:
-            print(f"{'\033[92m'}Loading Custom model...{'\033[0m'}")
+            print("\033[92mLoading Custom model...\033[0m")
             self.tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
             self.model = AutoModel.from_pretrained(model, trust_remote_code=True).to(self.device)
 
+        self.model.eval()
         self.model.eval()
         self.max_tokens = max_tokens
         self.top_k = top_k
@@ -40,7 +41,6 @@ class BugLocalization:
         # Initialize tree-sitter
         JAVA_LANGUAGE = Language(tsjava.language())
         self.parser = Parser(JAVA_LANGUAGE)
-
 
     def encode_code(self, code_str, verbose):
         """
@@ -78,7 +78,6 @@ class BugLocalization:
 
         return embeddings
 
-
     def encode_bug_report(self, text):
         """
         Encodes a bug report into an embedding using the model.
@@ -103,7 +102,6 @@ class BugLocalization:
 
             return [norm_embedding.squeeze(0).tolist()]
 
-
     def extract_methods_from_java(self, source_code):
         """
         Extracts method declarations from Java source code and splits them into chunks.
@@ -122,7 +120,9 @@ class BugLocalization:
         def walk(node):
             if node.type == "method_declaration":
                 method_text = self.node_text(bytes(source_code, "utf-8"), node)
-                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False,max_length=self.max_tokens)["input_ids"]
+                tokens = \
+                    self.tokenizer(method_text, truncation=True, add_special_tokens=False, max_length=self.max_tokens)[
+                        "input_ids"]
                 token_len = len(tokens)
 
                 if token_len > self.max_tokens:
@@ -143,7 +143,6 @@ class BugLocalization:
 
         return chunks
 
-
     def node_text(self, source_bytes, node):
         """
         Extracts the text corresponding to a tree-sitter node.
@@ -157,7 +156,6 @@ class BugLocalization:
         """
 
         return source_bytes[node.start_byte:node.end_byte].decode('utf-8')
-
 
     # File Ranking for Bug Localization
     def rank_files(self, query_embeddings, db_embeddings):
@@ -196,30 +194,31 @@ class BugLocalization:
         similarities.sort(key=lambda x: x[1], reverse=True)
         return similarities
 
+
 if __name__ == "__main__":
     # Create an instance of the BugLocalization class
     bug_localizer = BugLocalization()
-    
+
     # Example bug report text (long text)
     sample_text = "Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens...Your long bug report text that exceeds 512 tokens..."
     print("Encoding bug report for bug localization...")
     query_embeddings = bug_localizer.encode_text(sample_text)
-    
+
     # Example database embeddings for files (each with long text)
     file1_text = "Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens..Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens...Contents of file 1 that is over 512 tokens..."
     file2_text = "Contents of file 2 that is over 512 tokens..."
-    
+
     file1_embeddings = bug_localizer.encode_text(file1_text)
     # print(file1_embeddings)
     file2_embeddings = bug_localizer.encode_text(file2_text)
     # print(file2_embeddings)
-    
+
     # Prepare data for MongoDB storage (embeddings as lists)
     db_embeddings = [
         ("file1", file1_embeddings),
         ("file2", file2_embeddings)
     ]
-    
+
     # Rank files based on similarity to the query
     print("Ranking files based on similarity...")
     ranked_files = bug_localizer.rank_files(query_embeddings, db_embeddings)
