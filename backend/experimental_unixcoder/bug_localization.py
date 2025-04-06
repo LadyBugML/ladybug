@@ -120,9 +120,7 @@ class BugLocalization:
         def walk(node):
             if node.type == "method_declaration":
                 method_text = self.node_text(bytes(source_code, "utf-8"), node)
-                tokens = \
-                    self.tokenizer(method_text, truncation=True, add_special_tokens=False, max_length=self.max_tokens)[
-                        "input_ids"]
+                tokens = self.tokenizer(method_text, truncation=True, add_special_tokens=False, max_length=self.max_tokens)["input_ids"]
                 token_len = len(tokens)
 
                 if token_len > self.max_tokens:
@@ -178,13 +176,16 @@ class BugLocalization:
             # Convert query embeddings and file embeddings from lists back to tensors
             for query_embedding in query_embeddings:
                 query_tensor = torch.tensor(query_embedding, device=self.device)
+                # If the query tensor is 2D (token-level embeddings), pool it (e.g., mean over tokens)
+                if query_tensor.dim() > 1:
+                    query_tensor = query_tensor.mean(dim=0)
                 for file_embedding in file_embeddings:
                     file_tensor = torch.tensor(file_embedding, device=self.device)
-
-                    # Compute similarity
-                    similarity = torch.nn.functional.cosine_similarity(
-                        query_tensor, file_tensor, dim=1
-                    ).item()
+                    # If the file tensor is 2D (token-level embeddings), pool it (e.g., mean over tokens)
+                    if file_tensor.dim() > 1:
+                        file_tensor = file_tensor.mean(dim=0)
+                    # Compute similarity between the pooled vectors using dim=0
+                    similarity = torch.nn.functional.cosine_similarity(query_tensor, file_tensor, dim=0).item()
 
                     if similarity > max_similarity:
                         max_similarity = similarity
